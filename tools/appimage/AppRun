@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="${APPDIR:-$(cd "$(dirname "$0")" && pwd)}"
+SRC_DIR="$APP_DIR/usr/share/got"
+NODE_BIN="$APP_DIR/usr/bin/node"
+CHROME_BIN="$APP_DIR/usr/lib/got/chrome/chrome"
+
+if [[ ! -x "$NODE_BIN" || ! -x "$CHROME_BIN" ]]; then
+  printf '[GoT] AppImage is incomplete (missing embedded GUI runtime).\n' >&2
+  exit 1
+fi
+
+# KataGo writes OpenCL tuning data beside its config.  AppImages are mounted
+# read-only, so run a private writable copy and remove it on exit.
+TMP_ROOT="${TMPDIR:-/tmp}"
+RUN_DIR="$(mktemp -d "$TMP_ROOT/got-appimage.XXXXXX")"
+cleanup() {
+  [[ -n "${SERVER_PID:-}" ]] && kill "$SERVER_PID" 2>/dev/null || true
+  rm -rf "$RUN_DIR"
+}
+trap cleanup EXIT INT TERM
+cp -a "$SRC_DIR/." "$RUN_DIR/"
+
+PORT="${GOT_PORT:-4173}"
+LOG_FILE="$RUN_DIR/got-server.log"
+(
+  cd "$RUN_DIR"
+  if [[ "${GOT_APPIMAGE_NO_ENGINE:-}" == 1 ]]; then
+    exec "$NODE_BIN" server.js --port "$PORT" --no-engine
+  else
+    exec "$NODE_BIN" server.js --port "$PORT" --listen-first
+  fi
+) >"$LOG_FILE" 2>&1 &
+SERVER_PID=$!
+
+# server.js warms up KataGo before binding.  Wait for the local listener, but
+# never make a network request outside loopback.
+READY=0
+for _ in $(seq 1 120); do
+  if ! kill -0 "$SERVER_PID" 2>/dev/null; then break; fi
+  if "$NODE_BIN" -e "const n=require('net');const s=n.connect($PORT,'127.0.0.1',()=>{s.destroy();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),250)" 2>/dev/null; then
+    READY=1
+    break
+  fi
+  sleep 1
+done
+if [[ "$READY" != 1 ]]; then
+  printf '[GoT] Local server did not start.\n%s\n' "$(tail -20 "$LOG_FILE" 2>/dev/null || true)" >&2
+  exit 1
+fi
+
+if [[ "${GOT_APPIMAGE_CHECK_ONLY:-}" == 1 ]]; then
+  printf '[GoT] AppImage check passed: local server and bundled KataGo are ready.\n'
+  sed -n '1,12p' "$LOG_FILE" || true
+  exit 0
+fi
+
+# Chromium is shipped inside the AppImage and runs in app mode.  These flags
+# disable update/metrics/background services; the application itself only
+# serves loopback URLs and blocks cross-origin requests in its service worker.
+PROFILE_DIR="$RUN_DIR/chrome-profile"
+mkdir -p "$PROFILE_DIR"
+"$CHROME_BIN" \
+  --app="http://127.0.0.1:$PORT/" \
+  --user-data-dir="$PROFILE_DIR" \
+  --no-first-run --no-default-browser-check --disable-background-networking \
+  --disable-component-update --disable-crash-reporter --disable-domain-reliability \
+  --disable-sync --disable-translate --disable-features=MediaRouter,OptimizationHints \
+  --disable-client-side-phishing-detection --disable-notifications \
+  --host-resolver-rules="MAP * 0.0.0.0, EXCLUDE localhost, EXCLUDE 127.0.0.1, EXCLUDE ::1" \
+  --proxy-server="http://127.0.0.1:9" \
+  --proxy-bypass-list="localhost;127.0.0.1;[::1];<local>" \
+  --noerrdialogs "$@"

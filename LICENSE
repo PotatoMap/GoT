@@ -1,0 +1,23 @@
+ISC License
+
+Copyright (c) 2026 GoT (围棋工作台) contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+
+---------------------------------------------------------------------------
+第三方组件另行声明：
+- engines/katago/ 内的 KataGo 配置文件、说明与 cacert.pem 来自 KataGo
+  (https://github.com/lightvector/KataGo, MIT)，详见 engines/katago/NOTICE.md；
+- KataGo 神经网络权重由用户自行从 https://katagotraining.org/networks/ 下载，
+  适用其页面的 KataGo Neural Network License。
+---------------------------------------------------------------------------

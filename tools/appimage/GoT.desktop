@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=GoT 围棋工作台
+Comment=独立 GUI 围棋分析工作台（内置 KataGo）
+Exec=GoT
+Icon=got
+Terminal=false
+Categories=Game;BoardGame;
+StartupNotify=true

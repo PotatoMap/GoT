@@ -1,0 +1,2458 @@
+/* GoT — application controller.
+ * Game flow, engine orchestration (built-in MCTS worker + GTP bridge),
+ * analysis panel, game tree, scoring, i18n, persistence. */
+(function () {
+  'use strict';
+  /* 版本单一来源：js/version.js（sw.js 与构建脚本同读此值）。
+   * 兜底刻意留空——写死字面量曾造成"离线时 version.js 取不到 → 误判版本变化
+   * → 清空缓存并重载 → 缓存已空而服务未起 → 掉进浏览器错误页"。取不到就不做版本判断。 */
+  const APP_VER = (typeof window !== 'undefined' && window.GOT_VERSION) || '';
+  const GE = window.GoEngine;
+  const { BLACK, WHITE, EMPTY } = GE;
+  const $ = (id) => document.getElementById(id);
+
+  /* ================= i18n ================= */
+  const I18N = {
+    zh: {
+      playWorkspace: '对弈', reviewWorkspace: '复盘', displayOptions: '棋盘工具', focusBoard: '专注', firstMove: '首手', previousMove: '上一手', nextMove: '下一手', lastMoveNav: '末手', graphLegend: '蓝线：黑方胜率 · 金线：目差 ±15', reviewPosition: '复盘中 · 自动落子已暂停',
+      brandSub: '围棋', newGame: '新对局', openSgf: '打开', saveSgf: '保存', engineSettings: '引擎',
+      engineOff: '内置引擎', black: '黑方', white: '白方', captures: '提子',
+      rule: '规则', komi: '贴目', handicap: '让子', moveCount: '手数', result: '结果',
+      lastMove: '上一手', autosaved: '已自动保存', undo: '悔棋', redo: '前进', pass: '停着',
+      resign: '认输', showNumbers: '手数', analysis: '分析', scoreMode: '点目',
+      tabAnalysis: 'AI 分析', tabTree: '棋谱树', scoreLead: '形势判断', evalGraph: '胜率曲线',
+      candidates: '候选着法', ownership: '形势', backMain: '回到主线',
+      treeHint: '← → 换手 · ↑ ↓ 分支 · [ ] 失误', livePosition: '实时局面', previewing: '预览中',
+      ready: '就绪', newGameTitle: '新对局', boardSize: '棋盘', ruleChinese: '中国规则 · 数子',
+      ruleJapanese: '日本规则 · 数目', ruleKorean: '韩国规则 · 数目', youPlay: '执子', auto: '自动',
+      opponent: '对手', builtinAI: '内置 AI', gtpAI: 'KataGo', human: '双人', strength: '棋力',
+      thinkTime: '用时', cancel: '取消', start: '开始对局', engineSettingsTitle: 'GTP 引擎设置',
+      engineHint: '启动器会自动连接本目录的 KataGo。为保护隐私，只允许 localhost / 127.0.0.1 / ::1 本机桥接。',
+      bridgeUrl: '桥接地址', close: '关闭', connect: '连接', scoreTitle: '点目结果',
+      keepPlaying: '继续对局', confirmResult: '确认结果', resignConfirm: '确认认输？',
+      aboutText: '专业围棋工作台：内置 MCTS 引擎 + GTP 外部引擎（KataGo 等）+ 实时胜率分析 + 棋谱树。SGF 4 完整支持。',
+      you: '你', youTurn: '轮到你落子', gameOver: '对局结束',
+      illegalOccupied: '此处已有棋子', illegalSuicide: '禁着点（自杀）', illegalKo: '劫争，需先寻劫',
+      bothPassed: '双方连续停着，进入点目',
+      resigned: '中盘胜', scoreLeadB: '黑优', scoreLeadW: '白优',
+      qualityGood: '好棋', qualityBad: '缓着', qualityAwful: '败着',
+      copied: '已复制到剪贴板', loadedSgf: '棋谱已载入', loadFail: '载入失败：',
+      connectOk: '已连接：', connectFail: '连接失败：', needConnect: '请先在「引擎」中连接 GTP 桥接',
+      autoDeadDone: '已按形势标注死子', ruleCn: '中国规则', ruleJp: '日本规则', ruleKr: '韩国规则',
+      scoreStripHint: '点击棋子标记 / 取消死子', autoMark: 'AI 标注', clearMarks: '清除',
+      confirmScore: '确认点目', stonesRow: '棋子', territoryRow: '领地',
+      prisonersRow: '提子（含死子）', methodArea: '数子法', methodTerr: '数目法',
+      analysisTime: 'AI 分析用时', quickLocal: '本机 KataGo（同源）', quickPy: 'Python 桥接 :8766',
+      bridgeDown: '无法连接桥接服务——请先运行本目录启动脚本或 node server.js，再点击连接',
+      ngEngineOff: 'KataGo 未连接——请先运行本目录启动脚本；未连接时将以内置 AI 对局',
+      tabReview: '复盘', runReview: 'AI 复盘', stopReview: '停止', reviewSection: '复盘训练', reviewMode: '复盘模式',
+      autoPreview: '自动推演', autoPreviewHint: '悬停候选圈立即推演；其他空点稍候，引擎推演该点之后的最佳应接',
+      analyzing: '分析中…',
+      reviewEmpty: '运行 AI 复盘：生成双方 AI 吻合度、平均损失、评级分布与每手详细胜率评测，点击任意一手可在棋盘上跳转。',
+      reviewDone: '复盘完成', reviewStop: '已停止', reviewRunning: '复盘中',
+      aiMatch: 'AI 吻合度', top3Match: '前三吻合', avgLoss: '平均胜率损失', worstMove: '最差一手',
+      gradeOk: '正常', thCoord: '坐标', thWinrate: '胜率', thScore: '目差', thLoss: '损失(pp)', thGrade: '评级', thAi: 'AI',
+      reviewNoMoves: '尚无落子',
+      prevBlunder: '◀ 上一失误', nextBlunder: '下一失误 ▶', noBlunders: '未找到失误——请先运行 AI 复盘',
+      commentLabel: '备注', commentPlaceholder: '为本手添加备注（随 SGF 保存）',
+      soundOn: '音效已开启', soundOff: '音效已静音',
+      flip: '翻转', confirmMove: '确认', showCoords: '坐标',
+      autoplay: '播放', autoplayStop: '暂停',
+      practice: '练', practiceTip: '回到失误前，与 AI 重练这一处',
+      practiceStart: '练习开始——轮到你了，AI 扮演对手',
+      branchCreated: '已创建新分支（见棋谱树）',
+      engineTimeout: '引擎响应超时——请检查「引擎」连接',
+      pendingConfirm: '再次点击确认落子 · Esc 取消',
+      candEmptyHint: '开启「分析」或等待 AI 计算，即可查看候选着法与胜率',
+      pvTitle: '变化图：点击某手可推演到该手为止；再点一次显示完整后续',
+      fallbackBuiltin: 'KataGo 不可用——已自动改用内置 AI 对局',
+      gtpRestored: 'KataGo 已恢复连接',
+      serverDown: '本地服务未运行：AI 桥接不可用，已用内置 AI（运行 StartGoT.bat 或 node server.js 可用 KataGo）',
+      clearCache: '清除缓存并重载',
+      cacheCleared: '缓存已清除，正在重载…',
+      newVersion: '已更新到新版本，正在重载…',
+      displaySettings: '显示设置',
+      displaySettingsHint: '候选着法的棋盘圈颜色与右栏排序方式，改动立即生效并记住。',
+      candColorMode: '棋盘候选圈颜色',
+      candColorWinrate: '按胜率（绿高红低）',
+      candColorRank: '按排名（第 1 最绿）',
+      candSortMode: '候选列表排序',
+      candSortVisits: '按访问量（AI 偏好）',
+      candSortWinrate: '按胜率'
+    },
+    en: {
+      playWorkspace: 'Play', reviewWorkspace: 'Review', displayOptions: 'Board tools', focusBoard: 'Focus', firstMove: 'First', previousMove: 'Previous', nextMove: 'Next', lastMoveNav: 'Last', graphLegend: 'Blue: Black winrate · Gold: score ±15', reviewPosition: 'Review · AI moves paused',
+      brandSub: 'GO', newGame: 'New', openSgf: 'Open', saveSgf: 'Save', engineSettings: 'Engine',
+      engineOff: 'Built-in engine', black: 'Black', white: 'White', captures: 'Caps',
+      rule: 'Rule', komi: 'Komi', handicap: 'Handicap', moveCount: 'Moves', result: 'Result',
+      lastMove: 'Last move', autosaved: 'Autosaved', undo: 'Undo', redo: 'Redo', pass: 'Pass',
+      resign: 'Resign', showNumbers: 'Numbers', analysis: 'Analysis', scoreMode: 'Score',
+      tabAnalysis: 'AI Analysis', tabTree: 'Game Tree', scoreLead: 'Score lead', evalGraph: 'Winrate graph',
+      candidates: 'Candidates', ownership: 'Zone', backMain: 'Main line',
+      treeHint: '← → moves · ↑ ↓ branches · [ ] blunders', livePosition: 'LIVE POSITION', previewing: 'Previewing',
+      ready: 'Ready', newGameTitle: 'New Game', boardSize: 'Board', ruleChinese: 'Chinese · area',
+      ruleJapanese: 'Japanese · territory', ruleKorean: 'Korean · territory', youPlay: 'You play', auto: 'Auto',
+      opponent: 'Opponent', builtinAI: 'Built-in AI', gtpAI: 'KataGo (GTP)', human: 'Human', strength: 'Strength',
+      thinkTime: 'Time', cancel: 'Cancel', start: 'Start', engineSettingsTitle: 'GTP Engine Setup',
+      engineHint: 'The launcher auto-connects KataGo in this folder. For privacy, only localhost, 127.0.0.1, and ::1 bridges are permitted.',
+      bridgeUrl: 'Bridge URL', close: 'Close', connect: 'Connect', scoreTitle: 'Score Result',
+      keepPlaying: 'Keep playing', confirmResult: 'Confirm result', resignConfirm: 'Resign the game?',
+      aboutText: 'Professional Go workbench: built-in MCTS engine + GTP engines (KataGo etc.) + live winrate analysis + game tree. Full SGF 4 support.',
+      you: 'You', youTurn: 'Your move', gameOver: 'Game over',
+      illegalOccupied: 'Point occupied', illegalSuicide: 'Suicide is forbidden', illegalKo: 'Ko — play a ko threat first',
+      bothPassed: 'Both passed — scoring',
+      resigned: 'wins by resignation', scoreLeadB: 'B+', scoreLeadW: 'W+',
+      qualityGood: 'Good', qualityBad: 'Slow', qualityAwful: 'Mistake',
+      copied: 'Copied to clipboard', loadedSgf: 'Game loaded', loadFail: 'Load failed: ',
+      connectOk: 'Connected: ', connectFail: 'Connection failed: ', needConnect: 'Connect the GTP bridge in "Engine" first',
+      autoDeadDone: 'Dead stones marked by zone estimate', ruleCn: 'Chinese', ruleJp: 'Japanese', ruleKr: 'Korean',
+      scoreStripHint: 'Click stones to toggle dead', autoMark: 'AI mark', clearMarks: 'Clear',
+      confirmScore: 'Confirm', stonesRow: 'Stones', territoryRow: 'Territory',
+      prisonersRow: 'Captures (dead incl.)', methodArea: 'area scoring', methodTerr: 'territory scoring',
+      analysisTime: 'Analysis time', quickLocal: 'Local KataGo (same-origin)', quickPy: 'Python bridge :8766',
+      bridgeDown: 'Bridge not running — run this folder\'s launcher (or "node server.js") first, then connect',
+      ngEngineOff: 'KataGo not connected — run this folder\'s launcher first; falls back to built-in AI',
+      tabReview: 'Review', runReview: 'AI Review', stopReview: 'Stop', reviewSection: 'Review', reviewMode: 'Review mode',
+      autoPreview: 'Auto PV', autoPreviewHint: 'Hover a candidate to preview instantly; hover elsewhere briefly for the engine line',
+      analyzing: 'Analyzing…',
+      prevBlunder: '◀ Prev blunder', nextBlunder: 'Next blunder ▶', noBlunders: 'No blunders found — run AI Review first',
+      commentLabel: 'Note', commentPlaceholder: 'Add a note for this move (stored in SGF)',
+      soundOn: 'Sound on', soundOff: 'Sound muted',
+      reviewEmpty: 'Run AI Review: per-player AI match rate, average winrate loss (percentage points), grade distribution and per-move winrate report. Click any move to jump on the board.',
+      reviewDone: 'Review complete', reviewStop: 'Stopped', reviewRunning: 'Reviewing',
+      aiMatch: 'AI match', top3Match: 'Top-3 match', avgLoss: 'Avg WR loss', worstMove: 'Worst move',
+      gradeOk: 'Fine', thCoord: 'Coord', thWinrate: 'Winrate', thScore: 'Score', thLoss: 'Loss (pp)', thGrade: 'Grade', thAi: 'AI',
+      reviewNoMoves: 'No moves yet',
+      flip: 'Flip', confirmMove: 'Confirm', showCoords: 'Coords',
+      autoplay: 'Play', autoplayStop: 'Pause',
+      practice: 'Drill', practiceTip: 'Go back and re-practice this position vs AI',
+      practiceStart: 'Practice started — your move, AI takes the opponent',
+      branchCreated: 'New variation created (see game tree)',
+      engineTimeout: 'Engine timed out — check the "Engine" connection',
+      pendingConfirm: 'Click again to confirm · Esc to cancel',
+      candEmptyHint: 'Turn on "Analysis" (or wait for the AI) to see candidates and winrates',
+      pvTitle: 'PV line: click a move to preview up to it; click again for the full line',
+      fallbackBuiltin: 'KataGo unavailable — switched to the built-in AI',
+      gtpRestored: 'KataGo connection restored',
+      serverDown: 'Local server is not running: AI bridge unavailable, using built-in AI (run StartGoT.bat or node server.js for KataGo)',
+      clearCache: 'Clear cache & reload',
+      cacheCleared: 'Cache cleared — reloading…',
+      newVersion: 'Updated to a new version — reloading…',
+      displaySettings: 'Display settings',
+      displaySettingsHint: 'Board candidate colors and sidebar ordering. Changes apply instantly and are remembered.',
+      candColorMode: 'Board candidate color',
+      candColorWinrate: 'By winrate (green high, red low)',
+      candColorRank: 'By rank (best = greenest)',
+      candSortMode: 'Candidate list order',
+      candSortVisits: 'By visits (AI preference)',
+      candSortWinrate: 'By winrate'
+    }
+  };
+  let lang = localStorage.getItem('got.lang') || 'zh';
+  const t = (k) => (I18N[lang] && I18N[lang][k]) || I18N.zh[k] || k;
+
+  /* ================= state ================= */
+  const state = {
+    game: null,
+    workspace: 'play',
+    activeTab: 'tree',       // 右栏默认棋谱树（分析含复盘训练）
+    mode: 'play',            // play | score
+    previewNode: null,       // null | 'pv'
+    deadStones: new Set(),
+    showNumbers: false,
+    analysisOn: false,
+    autoPreview: false,      // 悬停交叉点自动推演后续局面（会话级，不持久化）
+    showOwnership: false,
+    opponent: 'builtin',     // builtin | gtp | human
+    humanColor: BLACK,
+    strength: 5,
+    timeMs: 1000,
+    analysisSeconds: 2,      // GTP 分析用时
+    scoreOwnership: null,    // 点目时使用的 AI 形势数组
+    reviewRunning: false,
+    reviewStop: false,
+    soundOn: true,
+    flip: false,           // 棋盘翻转 180°（腾讯/野狐风格）
+    confirmMove: false,    // 落子确认模式：点两次才落子（触屏防误点）
+    showCoords: true,      // 坐标显示
+    pendingMove: null,     // 确认模式下的待确认落子 {x,y}
+    autoplay: false,       // 复盘自动播放
+    autoplayTimer: 0,
+    candColor: 'winrate',  // 棋盘候选圈颜色：winrate 按胜率 | rank 按排名
+    candSort: 'visits'     // 候选列表排序：visits 按访问量 | winrate 按胜率
+  };
+  const savedSettings = (() => {
+    try { return JSON.parse(localStorage.getItem('got.settings')); } catch (e) { return null; }
+  })();
+  /* 只恢复"无害偏好"：**对局状态一律不跨会话**——对手是谁、你执黑还是执白属于
+   * 一局游戏的设定，恢复它们会让"打开即新局"名存实亡（更糟的是上次选了 KataGo，
+   * 这次桥没起来 → AI 一动不动，看起来像"缓存把 AI 卡死了"）。
+   * 连接地址是环境配置（本机桥接端口），保留。 */
+  if (savedSettings) {
+    if (savedSettings.strength) state.strength = savedSettings.strength;
+    if (savedSettings.timeMs) state.timeMs = savedSettings.timeMs;
+    if (savedSettings.analysisSeconds) state.analysisSeconds = savedSettings.analysisSeconds;
+    if (savedSettings.soundOn === false) state.soundOn = false;
+    if (typeof savedSettings.confirmMove === 'boolean') state.confirmMove = savedSettings.confirmMove;
+    if (typeof savedSettings.showCoords === 'boolean') state.showCoords = savedSettings.showCoords;
+    if (savedSettings.flip === true) state.flip = true;
+    if (savedSettings.candColor === 'winrate' || savedSettings.candColor === 'rank') state.candColor = savedSettings.candColor;
+    if (savedSettings.candSort === 'visits' || savedSettings.candSort === 'winrate') state.candSort = savedSettings.candSort;
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem('got.settings', JSON.stringify({
+        strength: state.strength, timeMs: state.timeMs,
+        analysisSeconds: state.analysisSeconds, soundOn: state.soundOn,
+        bridgeUrl: $('bridgeUrl').value,
+        confirmMove: state.confirmMove, showCoords: state.showCoords,
+        flip: state.flip, candColor: state.candColor, candSort: state.candSort
+      }));
+    } catch (e) { /* ignore */ }
+  }
+  /* 把底层 fetch 报错翻译成可操作的提示 */
+  function friendlyFetchError(err) {
+    const raw = String((err && err.message) || err || '');
+    if (/Failed to fetch|NetworkError|Load failed|fetch failed/i.test(raw)) return t('bridgeDown');
+    return raw;
+  }
+  const analysisCache = new Map();   // nodeId -> normalized analysis
+  let analysisSeq = 0;
+  let moveSeq = 0;
+  let requestedAnalysisNode = null;
+  let pendingGtp = 0;
+  let gtpAnalysisQueued = false;     // GTP 分析在途时到达的新请求：完成后自动补发，而不是丢弃
+  /* 放弃在途引擎走子：换手/导航/换局都用它（而不只是 moveSeq++）——
+   * 否则在途结果的 seq 护卫直接 return，engineThinking 无人清理 → 思考中常亮、悬停推演整局失效 */
+  function abandonEngine() {
+    moveSeq++;
+    setThinking(null, false);
+  }
+
+  /* ================= engines ================= */
+  function createEngineWorker() {
+    // inline blob source (filled in the single-file build) → works on file:// too
+    const inline = document.getElementById('got-ai-worker-src');
+    if (inline && inline.textContent && inline.textContent.trim()) {
+      try {
+        const url = URL.createObjectURL(new Blob([inline.textContent], { type: 'application/javascript' }));
+        return new Worker(url);
+      } catch (e) { /* fall through to external */ }
+    }
+    return new Worker('js/ai-worker.js');
+  }
+
+  const worker = createEngineWorker();
+  const defaultBridge = (location.protocol.indexOf('http') === 0) ? '' : 'http://127.0.0.1:4173';
+  const gtp = new window.GtpClient((savedSettings && savedSettings.bridgeUrl !== undefined && savedSettings.bridgeUrl !== null) ? savedSettings.bridgeUrl : defaultBridge);
+
+  worker.onmessage = (e) => {
+    const msg = e.data || {};
+    if (msg.type !== 'result') return;
+    if (msg.error) { console.error('AI worker:', msg.error); return; }
+    // 只接受"主局面分析"结果，且必须携带与当前请求一致的位置标识——
+    // 引擎行棋/预览/复盘/点目的晚到结果不允许冒充局面分析
+    const want = requestedAnalysisNode;
+    if (!want || msg.marker !== 'position:' + want.id) return;
+    ingestAnalysis('builtin', msg, msg.done !== false);
+  };
+  worker.onerror = (e) => console.error('AI worker:', e.message);
+
+  /* ================= helpers ================= */
+  function game() { return state.game; }
+  /* 分析用引擎：只要 GTP 引擎（KataGo 等）在线且支持 analyze 就优先用（最强），否则内置 */
+  function analysisEngineKind() {
+    return (gtp.info && gtp.info.supportsAnalyze !== false) ? 'gtp' : 'builtin';
+  }
+  /* 真正执子的对手：选了 KataGo 但桥没连上时不干等——自动用内置 AI 顶上；
+   * 桥一恢复，下一次轮到引擎又自动切回 KataGo。
+   * 这里不改 state.opponent（用户的对局设定保持不变），只影响"这次谁来下"。
+   * 曾经的行为：opp==='gtp' 且 !gtp.info → 只弹提示、谁也不下——整局卡死在等待。 */
+  let gtpDownNotified = false;
+  function effOpponent() {
+    return (state.opponent === 'gtp' && !gtp.info) ? 'builtin' : state.opponent;
+  }
+  function noteGtpFallback() {
+    if (gtpDownNotified) return;
+    gtpDownNotified = true;
+    showToast(t('fallbackBuiltin'));
+  }
+  function position() { return game().positionAt(game().current); }
+  function toMove() { return position().turn; }
+  function isHumanTurn() {
+    if (state.mode !== 'play' || game().result) return false;
+    if (state.workspace === 'review' || state.opponent === 'human') return true;
+    return toMove() === state.humanColor;
+  }
+  function moveNumberOf(node) {
+    let count = 0;
+    for (const n of game().pathFromRoot(node)) if (n.move) count++;
+    return count;
+  }
+  function coordOf(node) {
+    if (!node || !node.move) return '—';
+    if (node.move.pass) return lang === 'zh' ? '停着' : 'pass';
+    return GE.coordName(game().size, node.move.x, node.move.y);
+  }
+  function showToast(msg) {
+    const toast = $('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+  function movesListTo(node) {
+    return game().pathFromRoot(node).filter(n => n.move)
+      .map(n => ({ color: n.move.color, x: n.move.x, y: n.move.y, pass: n.move.pass }));
+  }
+  function rootSetup() {
+    const s = game().root.setup;
+    return s ? { AB: s.AB || [], AW: s.AW || [] } : null;
+  }
+
+  /* ================= analysis ingestion ================= */
+  function ingestAnalysis(kind, raw, done) {
+    const node = requestedAnalysisNode;
+    if (!node) return;
+    const size = game().size;
+    const toMoveC = raw.toMove !== undefined ? raw.toMove : toMove();
+    const clamp01 = (v) => Math.max(0, Math.min(1, v));
+    let wrBlack, scoreLeadBlack, candidates;
+    if (kind === 'builtin') {
+      wrBlack = clamp01(raw.winrate);
+      scoreLeadBlack = raw.scoreLead;
+      candidates = (raw.candidates || []).map(c => ({
+        x: c.x, y: c.y, pass: !!c.pass, visits: c.visits,
+        wrBlack: clamp01(c.winrate),
+        wrToMove: clamp01(toMoveC === BLACK ? c.winrate : 1 - c.winrate),
+        pv: c.pv || []
+      }));
+    } else {
+      const cands = (raw.candidates || []).filter(c => !c.pass);
+      const pct = (v) => (typeof v === 'number' && isFinite(v) ? Math.max(0, Math.min(100, v)) : 50);
+      const bestWrToMove = cands.length ? pct(cands[0].winrate) : null;   // percent
+      const bestScoreToMove = cands.length ? cands[0].scoreLead : null;
+      wrBlack = bestWrToMove === null ? 0.5
+        : clamp01(toMoveC === BLACK ? bestWrToMove / 100 : 1 - bestWrToMove / 100);
+      scoreLeadBlack = bestScoreToMove === null ? 0
+        : (toMoveC === BLACK ? bestScoreToMove : -bestScoreToMove);
+      candidates = cands.map(c => {
+        const wrPct = pct(c.winrate);
+        const wrB = clamp01(toMoveC === BLACK ? wrPct / 100 : 1 - wrPct / 100);
+        return {
+          x: c.x, y: c.y, pass: false, visits: c.visits,
+          wrBlack: wrB,
+          wrToMove: toMoveC === BLACK ? wrB : 1 - wrB,
+          pv: c.pv || []
+        };
+      });
+    }
+    const label = kind === 'builtin'
+      ? (lang === 'zh' ? '内置 MCTS' : 'Built-in MCTS')
+      : ((gtp.info && gtp.info.name) || 'GTP');
+    const analysis = {
+      kind, node,
+      visits: raw.visits || (candidates[0] ? candidates[0].visits : 0),
+      wrBlack, scoreLeadBlack, candidates,
+      ownership: raw.ownership || null,
+      nps: raw.nodesPerSec || 0,
+      label: `${label} · ${raw.visits || (candidates[0] ? candidates[0].visits : 0)}v`
+    };
+    analysisCache.set(node.id, analysis);
+    node.analysisWrBlack = wrBlack;
+    if (typeof scoreLeadBlack === 'number') node.analysisScoreLeadBlack = scoreLeadBlack;
+    requestedAnalysisNode = null;
+    updateAnalysisUI(analysis, done === false);
+    /* 分析数据落定后刷新"上一手"质量卡——否则它一直停在"…"占位符 */
+    if (!done) return;
+    updateQuality();
+  }
+
+  /* 悬停推演（假设分析）的在途失效：任何会打断 worker 的请求都先调它 */
+  function invalidatePreview() { previewSeq++; previewBusy = false; }
+  function requestAnalysis(node, opts) {
+    if (!state.analysisOn || state.mode === 'score') return;
+    invalidatePreview();
+    if (!$('candidateList').children.length) $('candMeta').textContent = t('analyzing');
+    const pos = game().positionAt(node);
+    const spec = {
+      size: game().size, komi: game().komi,
+      toMove: pos.turn,
+      moves: movesListTo(node),
+      setup: rootSetup()
+    };
+    const mySeq = ++analysisSeq;
+    requestedAnalysisNode = node;
+    // 分析始终用最强引擎：连接了 KataGo 等支持分析的 GTP 引擎就优先用，
+    // 否则用内置 MCTS 的最高分析档（9 段、无探索噪声）
+    const kind = (opts && opts.forceBuiltin) ? 'builtin' : analysisEngineKind();
+    if (kind === 'builtin') {
+      worker.postMessage({ type: 'stop' });
+      worker.postMessage({
+        type: 'analyze',
+        position: { size: spec.size, komi: spec.komi, toMove: spec.toMove, moves: spec.moves, setup: spec.setup },
+        opts: Object.assign({
+          strength: 9, topN: 5, analysis: true,
+          timeMs: Math.max(2500, state.analysisSeconds * 1000)
+        }, opts || {}),
+        // marker 带节点 id：worker 同步排队，晚到的旧结果无法冒充新局面
+        marker: 'position:' + node.id
+      });
+    } else {
+      // GTP 在途时不丢弃请求（丢弃会卡死"分析中…"）——记为待补发，在途结束后重试
+      if (pendingGtp >= 1) { gtpAnalysisQueued = true; return; }
+      pendingGtp++;
+      // settled 防负漂移：then/catch 双路径只能减一次（ingest 等同步异常不吞计数）
+      let settled = false;
+      const release = () => { if (!settled) { settled = true; pendingGtp--; } };
+      gtp.analyze(Object.assign({
+        seconds: Math.max(1, state.analysisSeconds),
+        topN: 5, ownership: true
+      }, spec), { priority: 1 })
+        .then(res => {
+          release();
+          if (mySeq !== analysisSeq) { retryQueuedGtpAnalysis(); return; }
+          if (res.ok) ingestAnalysis('gtp', Object.assign({ toMove: spec.toMove }, res), true);
+          else {
+            // 分析失败（引擎崩了/503）：不再干挂在"分析中…"——改用内置 MCTS 顶上
+            if (opts && opts.forceBuiltin) { $('candMeta').textContent = ''; return; }
+            requestAnalysis(node, { forceBuiltin: true });
+          }
+        })
+        .catch(() => {
+          release();
+          if (opts && opts.forceBuiltin) { $('candMeta').textContent = ''; return; }
+          // 网络/桥接错误：回落内置引擎，保证分析面板与候选圈始终可用
+          requestAnalysis(node, { forceBuiltin: true });
+        });
+    }
+  }
+  /* 在途 GTP 分析结束后，若期间有被搁置的请求，对最新局面补发一次 */
+  function retryQueuedGtpAnalysis() {
+    if (!gtpAnalysisQueued || pendingGtp > 0) return;
+    gtpAnalysisQueued = false;
+    const node = requestedAnalysisNode;
+    if (node && state.analysisOn && state.mode !== 'score') requestAnalysis(node);
+  }
+
+    /* 导航/换局后立刻清掉上一局面的候选圈与形势叠层，避免残影误导 */
+    function clearAnalysisOverlay() {
+      renderer.set({ candidates: [], ownership: null });
+      renderer.requestRender();
+      $('candidateList').textContent = '';
+      $('candEmpty').hidden = false;
+      $('pvLine').textContent = '';
+      $('candMeta').textContent = '';
+    }
+
+  /* ================= engine move ================= */
+  let engineThinking = false;   // 引擎是否在思考（悬停推演据此让路）
+  function setThinking(color, on) {
+    engineThinking = on;
+    $('blackThinking').hidden = !(on && color === BLACK);
+    $('whiteThinking').hidden = !(on && color === WHITE);
+    $('enginePill').classList.toggle('thinking', on);
+  }
+
+  function requestEngineMove() {
+    invalidatePreview();
+    if (state.workspace === 'review') return;
+    if (state.mode !== 'play' || game().result) return;
+    const opp = effOpponent();
+    if (opp !== state.opponent) noteGtpFallback();   // 选了 KataGo 但桥不可用 → 内置 AI 顶上
+    if (opp === 'human') return;
+    const color = toMove();
+    if (color === state.humanColor) return;
+    const node = game().current;
+    const mySeq = ++moveSeq;
+    setThinking(color, true);
+    const playBest = (best) => {
+      if (mySeq !== moveSeq) return;
+      setThinking(color, false);
+      if (!best) return;
+      if (best.pass) { game().pass(color); afterMove(); return; }
+      const r = game().play(color, best.x, best.y);
+      if (!r.ok) { showToast(t('illegalOccupied')); return; }
+      afterMove();
+    };
+    if (opp === 'gtp') {
+      if (!gtp.info) { setThinking(color, false); showToast(t('needConnect')); return; }
+      // 看门狗：引擎较慢（队列积压/负载高）时收起"思考中"并提示一次，
+      // 但【不】丢弃迟到的合法结果——只要局面没变（mySeq 未变）就照常落子，
+      // 否则 AI 回合会永久卡死（人类点不动、AI 也不下）。
+      // 真卡死的引擎由请求级 timeoutMs（fetch abort）兜底，中断后释放整条队列。
+      let warned = false;
+      const guardMs = Math.max(20000, state.timeMs * 4);
+      const watchdog = setTimeout(() => {
+        warned = true;
+        if (mySeq === moveSeq) { setThinking(color, false); showToast(t('engineTimeout')); }
+      }, guardMs);
+      gtp.analyze({
+        size: game().size, komi: game().komi, toMove: color,
+        moves: movesListTo(node), setup: rootSetup(),
+        seconds: Math.max(0.5, state.timeMs / 1000), topN: 1
+      }, { timeoutMs: guardMs + 5000, priority: 1 })
+        .then(res => {
+          clearTimeout(watchdog);
+          if (mySeq !== moveSeq) return;      // 局面已变：放弃本次落子
+          setThinking(color, false);
+          if (!res.ok || !res.bestMove) {
+            if (!warned) showToast(t('connectFail') + friendlyFetchError(res.error || ''));
+            return;
+          }
+          playBest(res.bestMove.pass ? { pass: true } : { x: res.bestMove.x, y: res.bestMove.y });
+        })
+        .catch(err => {
+          clearTimeout(watchdog);
+          if (mySeq !== moveSeq) return;
+          setThinking(color, false);
+          // 连接类错误（fetch 失败/abort）：abort 只发生在 watchdog 已提示之后
+          if (!warned) showToast(t('connectFail') + friendlyFetchError(err));
+        });
+      return;
+    }
+    // built-in worker: single final result with matching marker
+    // 动态 marker（含 mySeq）：worker 串行单任务、排队 stop 无效且必跑完并广播——
+    // 常量 marker 会让两个在途监听器互相吃结果（旧局面着法落到新局面）。按 seq 精确配对
+    const marker = 'move:' + mySeq;
+    worker.postMessage({
+      type: 'analyze',
+      position: { size: game().size, komi: game().komi, toMove: color, moves: movesListTo(node), setup: rootSetup() },
+      opts: { strength: state.strength, topN: 3, timeMs: state.timeMs },
+      marker
+    });
+    const onResult = (e) => {
+      const msg = e.data || {};
+      if (msg.type !== 'result' || msg.marker !== marker) return;
+      worker.removeEventListener('message', onResult);
+      if (mySeq !== moveSeq) return;
+      setThinking(color, false);
+      if (msg.error || !msg.done || !msg.best) return;
+      playBest(msg.best);
+    };
+    worker.addEventListener('message', onResult);
+  }
+
+  /* ================= board ================= */
+  const renderer = new window.BoardRenderer($('boardCanvas'));
+  const stage = $('boardStage');
+  const ro = new ResizeObserver(() => renderer.resizeTo(stage));
+  ro.observe(stage);
+
+  /* hover 状态去重：同一交叉点不重复渲染，坐标栏仅在变化时写 DOM */
+  let lastHoverIdx = -1;
+  /* 自动推演：悬停候选圈立即用现成 PV 推演；悬停其他空点约 0.35s 后做一次轻量
+   * 「假设分析」（当前局面 + 该手），推演之后双方的最佳应接。结果按 (局面,点)
+   * 缓存，再次悬停零等待。预览不吞点击：单击即落子；移动鼠标可流畅切换。 */
+  let autoPreviewTimer = 0, autoPreviewIdx = -1;
+  let previewBusy = false, previewSeq = 0;
+  const previewCache = new Map();
+  function cancelAutoPreview() {
+    if (autoPreviewTimer) { clearTimeout(autoPreviewTimer); autoPreviewTimer = 0; }
+    autoPreviewIdx = -1;
+  }
+  function scheduleAutoPreview(idx, p) {
+    cancelAutoPreview();
+    if (!state.autoPreview || !state.analysisOn || state.mode !== 'play' || game().result) return;
+    if (idx < 0 || position().board[idx] || state.pendingMove) return;
+    /* 合法性预检：非法点（自杀/劫禁）不发起假设分析——否则引擎对"幻觉局面"
+     * 静默重放失败照样给出一条从未存在过的 PV */
+    if (!position().checkPlay(toMove(), idx).ok) return;
+    const a = analysisCache.get(game().current.id);
+    const cand = a && a.candidates && a.candidates.find(c => !c.pass && c.x === p.x && c.y === p.y);
+    if (cand) { previewPv(cand); return; }        // 候选圈：现成 PV，零等待
+    autoPreviewIdx = idx;
+    autoPreviewTimer = setTimeout(() => {
+      autoPreviewTimer = 0;
+      if (autoPreviewIdx !== lastHoverIdx || !state.autoPreview) return;
+      requestHypoPreview(idx, p);
+    }, 350);
+  }
+  function previewLine(pv, startColor, badgePct) {
+    const preview = [];
+    let color = startColor;
+    let n = 0;
+    for (const m of (pv || [])) {
+      if (m.pass) { preview.push({ pass: true, color }); break; }
+      n++;
+      preview.push({ x: m.x, y: m.y, color, n });
+      color = color === BLACK ? WHITE : BLACK;
+    }
+    if (!preview.length) return;
+    state.previewNode = 'pv';
+    $('previewBadge').hidden = false;
+    $('previewBadge').textContent = t('previewing') +
+      (typeof badgePct === 'number' && isFinite(badgePct) ? ' · ' + badgePct + '%' : '');
+    renderer.set({ preview, hover: null });
+    renderer.requestRender();
+  }
+  function showHypoPreview(hit, idx) {
+    const hp = { x: idx % game().size, y: Math.floor(idx / game().size) };
+    if (position().board[hp.y * game().size + hp.x]) return;
+    previewLine([{ x: hp.x, y: hp.y }].concat(hit.pv || []), toMove(), hit.wrPct);
+  }
+  /* 轻量假设分析：只求一条最佳应接 PV，不占用也不污染主分析结果 */
+  function requestHypoPreview(idx, p) {
+    if (engineThinking || previewBusy || requestedAnalysisNode) return;
+    if (analysisEngineKind() === 'gtp' && pendingGtp > 0) return;
+    const node = game().current;
+    const key = node.id + ':' + idx;
+    const hit = previewCache.get(key);
+    if (hit) { showHypoPreview(hit, idx); return; }
+    const mover = position().turn;
+    const reply = mover === BLACK ? WHITE : BLACK;
+    const spec = {
+      size: game().size, komi: game().komi, toMove: reply,
+      moves: movesListTo(node).concat([{ color: mover, x: p.x, y: p.y, pass: false }]),
+      setup: rootSetup()
+    };
+    previewBusy = true;
+    const mySeq = ++previewSeq;
+    const done = (res, kind) => {
+      if (mySeq === previewSeq) previewBusy = false;
+      if (mySeq !== previewSeq || !res) return;
+      const c0 = res.candidates && res.candidates[0];
+      if (!c0 || !c0.pv || !c0.pv.length) return;
+      /* 徽章显示【落子方(mover)】胜率。假设分析的请求方是 reply（对手应手）：
+       * - server/GTP：candidates.winrate = 行棋方(reply)视角百分比 → mover = 1 - pct
+       * - 内置引擎：candidates.winrate 恒为黑方视角(0..1) → 先换算 reply 视角再取反 */
+      let wrMover;
+      if (kind === 'builtin') {
+        const wrB = Math.max(0, Math.min(1, c0.winrate));
+        wrMover = reply === BLACK ? 1 - wrB : wrB;
+      } else {
+        const pct = Math.max(0, Math.min(100, c0.winrate));
+        wrMover = 1 - pct / 100;
+      }
+      const hitNew = { pv: c0.pv, wrPct: Math.round(wrMover * 100) };
+      previewCache.set(key, hitNew);
+      if (previewCache.size > 60) previewCache.delete(previewCache.keys().next().value);
+      if (autoPreviewIdx !== lastHoverIdx || !state.autoPreview) return;
+      if (state.previewNode || state.pendingMove) return;
+      showHypoPreview(hitNew, idx);
+    };
+    if (analysisEngineKind() === 'gtp') {
+      gtp.analyze(Object.assign({ seconds: 0.6, topN: 1, ownership: false }, spec))
+        .then(res => done(res && res.ok ? res : null, 'gtp'))
+        .catch(() => done(null, 'gtp'));
+    } else {
+      // 动态 marker：防在途旧预览与新点的监听器交叉消费（旧 PV 写进新点缓存）
+      const marker = 'preview:' + previewSeq;
+      worker.postMessage({
+        type: 'analyze',
+        position: { size: spec.size, komi: spec.komi, toMove: spec.toMove, moves: spec.moves, setup: spec.setup },
+        opts: { strength: 9, topN: 1, analysis: true, timeMs: 700 },
+        marker
+      });
+      const onMsg = (e) => {
+        const msg = e.data || {};
+        if (msg.type !== 'result' || msg.marker !== marker) return;
+        worker.removeEventListener('message', onMsg);
+        done(msg.error ? null : msg, 'builtin');
+      };
+      worker.addEventListener('message', onMsg);
+    }
+  }
+  $('autoPreviewBtn').addEventListener('click', () => {
+    state.autoPreview = !state.autoPreview;
+    $('autoPreviewBtn').setAttribute('aria-pressed', String(state.autoPreview));
+    cancelAutoPreview();
+    if (!state.autoPreview) clearPreview();
+  });
+  $('boardCanvas').addEventListener('mousemove', (e) => {
+    const p = renderer.pointAt(e.clientX, e.clientY);
+    const idx = p ? p.y * game().size + p.x : -1;
+    if (idx === lastHoverIdx) return;
+    lastHoverIdx = idx;
+    $('statusCoord').textContent = idx >= 0 ? GE.coordName(game().size, p.x, p.y) : '—';
+    /* 预览跟随鼠标：移到新的空点自动切换推演目标；离开棋盘或移到棋子上即收起 */
+    if (state.previewNode) exitPreview();
+    const wantHover = idx >= 0 && state.mode === 'play' && isHumanTurn() &&
+      !state.previewNode && !position().board[idx];
+    const hasHover = !!renderer.opts.hover;
+    if (wantHover) {
+      if (!hasHover || renderer.opts.hover.x !== p.x || renderer.opts.hover.y !== p.y) {
+        renderer.set({ hover: { x: p.x, y: p.y, color: toMove() } });
+        renderer.requestRender();
+      }
+    } else if (hasHover) {
+      renderer.set({ hover: null });
+      renderer.requestRender();
+    }
+    scheduleAutoPreview(idx, p);
+  });
+  $('boardCanvas').addEventListener('mouseleave', () => {
+    lastHoverIdx = -1;
+    cancelAutoPreview();
+    if (renderer.opts.hover) { renderer.set({ hover: null }); renderer.requestRender(); }
+    clearPreview();
+  });
+  /* 人类落子统一入口：合法性提示 + 产生新变着分支时提示（腾讯/野狐会在树上看到分叉） */
+  function playHumanMove(x, y) {
+    const cur = game().current;
+    const isNewBranch = cur.children.length > 0 &&
+      !game().findChild(cur, { color: toMove(), x, y, pass: false });
+    const r = game().play(toMove(), x, y);
+    if (!r.ok) {
+      showToast(r.reason === 'occupied' ? t('illegalOccupied') : r.reason === 'ko' ? t('illegalKo') : t('illegalSuicide'));
+      return false;
+    }
+    if (isNewBranch) showToast(t('branchCreated'));
+    afterMove();
+    return true;
+  }
+  function humanPass() {
+    const cur = game().current;
+    const isNewBranch = cur.children.length > 0 &&
+      !game().findChild(cur, { color: toMove(), pass: true });
+    game().pass(toMove());
+    if (isNewBranch) showToast(t('branchCreated'));
+    afterMove();
+  }
+
+  $('boardCanvas').addEventListener('click', (e) => {
+    const p = renderer.pointAt(e.clientX, e.clientY);
+    if (!p) return;
+    if (state.mode === 'score') { toggleDead(p.x, p.y); return; }
+    if (state.previewNode) exitPreview();   // 预览不吞点击：收起后继续正常落子
+    if (!isHumanTurn()) return;
+    // 落子确认模式（腾讯围棋风格）：第一次点击放待确认子，点同一位置确认，点别处改选
+    if (state.confirmMove) {
+      const pd = state.pendingMove;
+      if (pd && pd.x === p.x && pd.y === p.y) {
+        state.pendingMove = null;
+        playHumanMove(p.x, p.y);
+      } else {
+        state.pendingMove = { x: p.x, y: p.y };
+        renderBoard();
+        renderSide();
+      }
+      return;
+    }
+    playHumanMove(p.x, p.y);
+  });
+
+  function afterMove() {
+    moveSeq++;
+    analysisSeq++;
+    requestedAnalysisNode = null;
+    state.pendingMove = null;
+    exitPreview();
+    clearAnalysisOverlay();
+    const mv = game().current.move;
+    if (mv && !mv.pass) playStoneSound(mv.color);
+    renderAll();
+    const pos = position();
+    const prev = game().current.parent;
+    const bothPassed = pos.lastWasPass && prev && prev.move && prev.move.pass;
+    if (bothPassed && !game().result) {
+      showToast(t('bothPassed'));
+      enterScoreMode();
+      return;
+    }
+    if (!game().result) {
+      /* 引擎即将行棋时不再抢占分析通道（避免 stop/analyze 互相打架），其落子后随 afterMove 再析 */
+      const engineNext = state.mode === 'play' && state.workspace !== 'review' &&
+        state.opponent !== 'human' && toMove() !== state.humanColor;
+      if (!engineNext) requestAnalysis(game().current);
+      requestEngineMove();
+    }
+    updateQuality();
+  }
+
+  /* ================= scoring ================= */
+  function enterScoreMode() {
+    state.mode = 'score';
+    $('scoreBtn').setAttribute('aria-pressed', 'true');
+    $('scoreStrip').classList.remove('hidden');
+    updateScoreUI();
+    renderAll();
+    autoMarkDead().then(() => { updateScoreUI(); renderBoard(); });
+  }
+  function exitScoreMode() {
+    state.mode = 'play';
+    state.deadStones.clear();
+    state.scoreOwnership = null;
+    $('scoreBtn').setAttribute('aria-pressed', 'false');
+    $('scoreStrip').classList.add('hidden');
+    renderAll();
+  }
+  function quickOwnership() {
+    return new Promise((resolve) => {
+      let settled = false;
+      const nodeId = game().current.id;
+      const onMsg = (e) => {
+        const msg = e.data || {};
+        if (msg.type === 'result' && msg.done && msg.ownership && msg.marker === 'ownership:' + nodeId) {
+          settled = true;
+          worker.removeEventListener('message', onMsg);
+          resolve(msg.ownership);
+        }
+      };
+      worker.addEventListener('message', onMsg);
+      invalidatePreview();
+      worker.postMessage({ type: 'stop' });
+      worker.postMessage({
+        type: 'analyze',
+        position: { size: game().size, komi: game().komi, toMove: toMove(), moves: movesListTo(game().current), setup: rootSetup() },
+        opts: { strength: 6, topN: 1, timeMs: 1200, analysis: true },
+        marker: 'ownership:' + nodeId
+      });
+      setTimeout(() => {
+        worker.removeEventListener('message', onMsg);
+        if (!settled) resolve(null);
+      }, 4000);
+    });
+  }
+  /* ownership 优先级：缓存 → GTP 引擎（KataGo）→ 内置 MCTS */
+  function fetchOwnership(force) {
+    const node = game().current;
+    if (!force) {
+      const cached = analysisCache.get(node.id);
+      if (cached && cached.ownership) return Promise.resolve(cached.ownership);
+    }
+    if (analysisEngineKind() === 'gtp') {
+      return gtp.analyze({
+        size: game().size, komi: game().komi, toMove: toMove(),
+        moves: movesListTo(node), setup: rootSetup(),
+        seconds: 1.5, topN: 1, ownership: true
+      }, { priority: 1 }).then(res => (res.ok && res.ownership) ? res.ownership : null)
+        .catch(() => null);
+    }
+    return quickOwnership();
+  }
+  async function autoMarkDead(force) {
+    state.deadStones.clear();
+    const g = state.game;
+    const ownership = await fetchOwnership(force);
+    /* 异步返回时可能已换局/退出数子，拒绝过期结果 */
+    if (state.game !== g || state.mode !== 'score') return;
+    state.scoreOwnership = ownership;
+    if (!ownership) return;
+    const pos = position();
+    const b = pos.board;
+    const seen = new Set();
+    for (let i = 0; i < b.length; i++) {
+      if (!b[i] || seen.has(i)) continue;
+      const grp = pos.group(i);
+      for (const s of grp.stones) seen.add(s);
+      let sum = 0;
+      for (const s of grp.stones) sum += ownership[s] || 0;
+      const mean = sum / grp.stones.length;
+      if ((b[i] === BLACK && mean < -0.45) || (b[i] === WHITE && mean > 0.45)) {
+        for (const s of grp.stones) state.deadStones.add(s);
+      }
+    }
+    showToast(t('autoDeadDone'));
+  }
+  function toggleDead(x, y) {
+    const pos = position();
+    const idx = y * game().size + x;
+    if (!pos.board[idx]) return;
+    const grp = pos.group(idx);
+    const isDead = state.deadStones.has(idx);
+    for (const s of grp.stones) {
+      if (isDead) state.deadStones.delete(s); else state.deadStones.add(s);
+    }
+    updateScoreUI();
+    renderBoard();
+  }
+  function currentScore() {
+    return GE.scorePosition(position(), {
+      dead: state.deadStones,
+      komi: game().komi,
+      scoring: (GE.RULES[game().rules] && GE.RULES[game().rules].scoring) || 'area',
+      ownership: state.scoreOwnership
+    });
+  }
+  function updateScoreUI() {
+    const g = game();
+    const pos = position();
+    const sc = currentScore();
+    const rules = GE.RULES[g.rules] || GE.RULES.chinese;
+    const isTerritory = rules.scoring === 'territory';
+    $('scoreBlackPts').textContent = sc.black;
+    $('scoreWhitePts').textContent = sc.white;
+    $('scoreResultText').textContent = sc.result;
+    $('stripBlack').textContent = sc.black;
+    $('stripWhite').textContent = sc.white;
+    // 明细行
+    const deadB = sc.deadStones.filter(i => pos.board[i] === BLACK).length;
+    const deadW = sc.deadStones.filter(i => pos.board[i] === WHITE).length;
+    if (isTerritory) {
+      $('sdStonesRow').style.display = 'none';
+      $('sdPrisRow').style.display = '';
+      $('sdPrisB').textContent = pos.captures[BLACK] + deadW;
+      $('sdPrisW').textContent = pos.captures[WHITE] + deadB;
+    } else {
+      $('sdStonesRow').style.display = '';
+      $('sdPrisRow').style.display = 'none';
+      $('sdStonesB').textContent = sc.stonesB;
+      $('sdStonesW').textContent = sc.stonesW;
+    }
+    $('sdTerrB').textContent = sc.terrB;
+    $('sdTerrW').textContent = sc.terrW;
+    $('sdKomi').textContent = g.komi;
+    const ruleKeys = { chinese: 'ruleCn', japanese: 'ruleJp', korean: 'ruleKr' };
+    const method = isTerritory ? t('methodTerr') : t('methodArea');
+    $('sdRule').textContent = t(ruleKeys[g.rules] || 'ruleCn') + ' · ' + method +
+      (g.handicap ? ' · ' + t('handicap') + ' ' + g.handicap : '');
+  }
+
+  /* ================= analysis UI ================= */
+  function updateAnalysisUI(a, isProgress) {
+    const wr = Math.max(0, Math.min(1, a.wrBlack !== undefined ? a.wrBlack : 0.5));
+    $('winrateFill').style.width = (wr * 100).toFixed(1) + '%';
+    $('winrateBlackLabel').textContent = Math.round(wr * 100) + '%';
+    $('winrateWhiteLabel').textContent = Math.round((1 - wr) * 100) + '%';
+    const sl = a.scoreLeadBlack;
+    $('scoreLead').textContent = Number.isFinite(sl) ? (sl >= 0 ? 'B+' : 'W+') + Math.abs(sl).toFixed(1) : '—';
+    $('engineMeta').textContent = a.label + (a.nps ? ' · ' + a.nps + ' n/s' : '') + (isProgress ? ' …' : '');
+    $('candMeta').textContent = a.label || (a.visits ? a.visits + ' visits' : '');
+    const list = $('candidateList');
+    list.textContent = '';
+    const rootV = a.candidates.length ? Math.max.apply(null, a.candidates.map(c => c.visits)) : 1;
+    /* 排序方式可配置：visits = AI 偏好序（引擎输出原序），winrate = 纯胜率降序。
+     * 缓存里的 a.candidates 始终保持 visits 序，这里只影响展示。 */
+    const ordered = state.candSort === 'winrate'
+      ? a.candidates.slice().sort((p, q) => (q.wrToMove || 0) - (p.wrToMove || 0))
+      : a.candidates;
+    const shown = ordered.slice(0, 5);
+    const lastK = shown.length - 1;
+    shown.forEach((c, k) => {
+      const row = document.createElement('div');
+      row.tabIndex = 0;
+      row.className = 'candidate-row' + (k === 0 ? ' best' : '');
+      row.setAttribute('role', 'option');
+      const wrPct = (Math.round(c.wrToMove * 1000) / 10).toFixed(1);
+      const moverColor = toMove() === BLACK ? '#0c0d0e' : '#ecebe4';
+      const coordText = c.pass ? (lang === 'zh' ? '停着' : 'pass') : GE.coordName(game().size, c.x, c.y);
+      /* 颜色按候选间相对排名：第 1 名绿、末位红，与绝对胜率无关 */
+      const wrColor = k === 0 ? '#9fd8ae' : (k === lastK && lastK > 0 ? '#eb9a98' : 'var(--text-dim)');
+      row.innerHTML =
+        '<span class="cand-coord"><i style="background:' + moverColor + '"></i>' + coordText + '</span>' +
+        '<span class="cand-wr" style="color:' + wrColor + '">' + wrPct + '%</span>' +
+        '<span class="cand-visits-bar"><i style="width:' + Math.round(100 * c.visits / Math.max(1, rootV)) + '%"></i></span>' +
+        '<span class="cand-visits">' + c.visits + '</span>';
+      row.addEventListener('focus', () => previewPv(c));
+      row.addEventListener('blur', clearPreview);
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); playCandidate(c); } });
+      row.addEventListener('mouseenter', () => previewPv(c));
+      row.addEventListener('mouseleave', clearPreview);
+      row.addEventListener('click', () => playCandidate(c));
+      list.appendChild(row);
+    });
+    /* PV 变化图：pvLine 升级为可点击的坐标 chip——
+     * 点击第 k 手 → 推演前 1..k 手；再点当前已选 chip → 展开完整推演 */
+    const pvEl = $('pvLine');
+    pvEl.textContent = '';
+    const pvCand = a.candidates.length ? a.candidates[0] : null;
+    if (pvCand && pvCand.pv && pvCand.pv.length) {
+      const pvPct = (typeof pvCand.wrToMove === 'number' && isFinite(pvCand.wrToMove)) ?
+        Math.round(pvCand.wrToMove * 100) : null;
+      let onChip = -1;
+      pvCand.pv.forEach((m, i) => {
+        const chip = document.createElement('span');
+        chip.className = 'pv-chip';
+        chip.tabIndex = 0;
+        chip.textContent = m.pass ? (lang === 'zh' ? '停着' : 'pass')
+          : GE.coordName(game().size, m.x, m.y);
+        const showPrefix = (k) => {
+          previewLine(pvCand.pv.slice(0, k + 1), toMove(), k === pvCand.pv.length - 1 ? pvPct : null);
+          for (const el of pvEl.children) el.classList.toggle('on', el === chip);
+          onChip = k;
+        };
+        const showFull = () => {
+          previewLine(pvCand.pv, toMove(), pvPct);
+          for (const el of pvEl.children) el.classList.toggle('on', el === chip);
+          onChip = pvCand.pv.length - 1;
+        };
+        chip.addEventListener('click', () => { onChip === i ? showFull() : showPrefix(i); });
+        chip.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChip === i ? showFull() : showPrefix(i); }
+        });
+        pvEl.appendChild(chip);
+      });
+    }
+    $('candEmpty').hidden = a.candidates.length > 0;
+    drawEvalGraph();
+    if (state.mode === 'score') updateScoreUI();
+    renderBoard();
+  }
+
+  function previewPv(cand) {
+    const pct = (typeof cand.wrToMove === 'number' && isFinite(cand.wrToMove)) ? Math.round(cand.wrToMove * 100) : null;
+    previewLine(cand.pv, toMove(), pct);
+  }
+  /* 变化图 chip 的选中态跟随预览：预览收起即取消高亮 */
+  function clearPvChips() {
+    const pvEl = $('pvLine');
+    for (const el of pvEl.children) el.classList.remove('on');
+  }
+  function clearPreview() {
+    clearPvChips();
+    if (state.previewNode === 'pv') {
+      state.previewNode = null;
+      $('previewBadge').hidden = true;
+      renderer.set({ preview: null });
+      renderer.requestRender();
+    }
+  }
+  function exitPreview() {
+    cancelAutoPreview();
+    state.previewNode = null;
+    $('previewBadge').hidden = true;
+    renderer.set({ preview: null });
+  }
+  function playCandidate(cand) {
+    clearPreview();
+    if (state.mode !== 'play') return;
+    if (cand.pass) { if (isHumanTurn()) humanPass(); return; }
+    const existing = game().findChild(game().current, { color: toMove(), x: cand.x, y: cand.y, pass: false });
+    if (existing) { game().current = existing; afterMove(); return; }
+    if (!isHumanTurn()) return;
+    playHumanMove(cand.x, cand.y);
+  }
+
+  /* eval graph：胜率主曲线 + 目差副曲线 + 失误红点，点击任意位置跳转该手。
+   * 曲线跟随当前所在路径（根→当前节点）——在分支变着里游走时所见即所析。 */
+  function drawEvalGraph() {
+    const canvas = $('evalGraph');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || 300, h = 72;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(139, 143, 153, .3)';
+    ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+    const nodes = timelineNodes();
+    if (nodes.length < 2) return;
+    const X = (i) => w * i / (nodes.length - 1);
+    const yWr = (v) => h - v * h;
+    const ySl = (v) => h * (1 - (Math.max(-15, Math.min(15, v)) + 15) / 30);
+    // 胜率填充 + 主曲线
+    const wrPts = [];
+    nodes.forEach((n, i) => { if (typeof n.analysisWrBlack === 'number') wrPts.push([i, n.analysisWrBlack]); });
+    if (wrPts.length >= 2) {
+      ctx.beginPath();
+      ctx.moveTo(X(wrPts[0][0]), h);
+      wrPts.forEach(([i, v]) => ctx.lineTo(X(i), yWr(v)));
+      ctx.lineTo(X(wrPts[wrPts.length - 1][0]), h);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(147, 160, 201, .16)';
+      ctx.fill();
+      ctx.beginPath();
+      wrPts.forEach(([i, v], k) => { if (k === 0) ctx.moveTo(X(i), yWr(v)); else ctx.lineTo(X(i), yWr(v)); });
+      ctx.strokeStyle = '#93a0c9';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+    // 目差副曲线（琥珀色，±15 目量程）
+    const slPts = [];
+    nodes.forEach((n, i) => { if (typeof n.analysisScoreLeadBlack === 'number') slPts.push([i, n.analysisScoreLeadBlack]); });
+    if (slPts.length >= 2) {
+      ctx.beginPath();
+      slPts.forEach(([i, v], k) => { if (k === 0) ctx.moveTo(X(i), ySl(v)); else ctx.lineTo(X(i), ySl(v)); });
+      ctx.strokeStyle = 'rgba(217, 173, 96, .75)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+    // 失误红点（坏棋/败着）
+    nodes.forEach((n, i) => {
+      if (!n.review || (n.review.grade !== 'bad' && n.review.grade !== 'awful')) return;
+      if (typeof n.analysisWrBlack !== 'number') return;
+      ctx.beginPath();
+      ctx.arc(X(i), yWr(n.analysisWrBlack), 3.2, 0, 7);
+      ctx.fillStyle = n.review.grade === 'awful' ? '#eb9a98' : '#e8b977';
+      ctx.fill();
+    });
+    // 当前位置
+    const cur = game().current;
+    const ci = nodes.indexOf(cur);
+    if (ci >= 0 && typeof cur.analysisWrBlack === 'number') {
+      ctx.beginPath();
+      ctx.arc(X(ci), yWr(cur.analysisWrBlack), 3, 0, 7);
+      ctx.fillStyle = '#d9ad60';
+      ctx.fill();
+    }
+  }
+  $('evalGraph').addEventListener('click', (e) => {
+    const nodes = timelineNodes();
+    if (nodes.length < 2) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const i = Math.max(0, Math.min(nodes.length - 1,
+      Math.round((e.clientX - rect.left) / Math.max(1, rect.width) * (nodes.length - 1))));
+    goToNode(nodes[i]);
+  });
+
+  /* Workspace and navigation stay separate from scoring and game rules. */
+  let timelineAnchor = null;
+  function timelineNodes() {
+    const g = game();
+    const anchorPath = timelineAnchor ? g.pathFromRoot(timelineAnchor) : [];
+    let nodes = anchorPath[0] === g.root && anchorPath.includes(g.current)
+      ? anchorPath : g.pathFromRoot(g.current);
+    nodes = nodes.slice();
+    let tail = nodes[nodes.length - 1];
+    while (tail && tail.children.length) { tail = tail.children[0]; nodes.push(tail); }
+    timelineAnchor = tail;
+    return nodes;
+  }
+  function updateTimeline() {
+    const nodes = timelineNodes();
+    const index = nodes.indexOf(game().current);
+    $('timelinePosition').textContent = index + ' / ' + (nodes.length - 1);
+    $('firstMoveBtn').disabled = $('previousMoveBtn').disabled = index <= 0;
+    $('lastMoveBtn').disabled = $('nextMoveBtn').disabled = index >= nodes.length - 1;
+  }
+  function navigateTimeline(target) {
+    const nodes = timelineNodes();
+    const index = nodes.indexOf(game().current);
+    const next = target === 'first' ? 0 : target === 'last' ? nodes.length - 1 : index + target;
+    goToNode(nodes[Math.max(0, Math.min(nodes.length - 1, next))]);
+  }
+  function setWorkspace(name) {
+    if (state.workspace === name) return;
+    stopAutoplay();
+    abandonEngine();
+    analysisSeq++;
+    requestedAnalysisNode = null;
+    invalidatePreview();
+    worker.postMessage({ type: 'stop' });
+    setThinking(BLACK, false); setThinking(WHITE, false);
+    state.pendingMove = null;
+    exitPreview();
+    state.workspace = name;
+    document.body.dataset.workspace = name;
+    $('reviewToggleBtn').setAttribute('aria-pressed', String(name === 'review'));
+    switchTab('analysis'); // 内部已 renderAll，不再重复调用
+    if (name === 'review') scrollReviewIntoView();
+    requestAnalysis(game().current);
+    if (name === 'play') requestEngineMove();
+  }
+  $('reviewToggleBtn').addEventListener('click', () => setWorkspace(state.workspace === 'review' ? 'play' : 'review'));
+  $('firstMoveBtn').addEventListener('click', () => navigateTimeline('first'));
+  $('previousMoveBtn').addEventListener('click', () => navigateTimeline(-1));
+  $('nextMoveBtn').addEventListener('click', () => navigateTimeline(1));
+  $('lastMoveBtn').addEventListener('click', () => navigateTimeline('last'));
+  $('focusBtn').addEventListener('click', () => {
+    const focused = document.body.classList.toggle('focus-board');
+    $('focusBtn').setAttribute('aria-pressed', String(focused));
+  });
+  new ResizeObserver(() => drawEvalGraph()).observe($('evalGraph'));
+
+  /* ================= game tree ================= */
+  function renderTree() {
+    if (state.activeTab !== 'tree') return;
+    const container = $('gameTree');
+    container.textContent = '';
+    const g = game();
+    function walk(node, depth) {
+      if (node !== g.root) {
+        const row = document.createElement('div');
+        row.className = 'tree-row';
+        row.style.paddingLeft = Math.min(depth * 14, 220) + 'px';
+        const nodeEl = document.createElement('span');
+        const isCur = node === g.current;
+        nodeEl.className = 'tree-node' + (isCur ? ' current' : '');
+        const num = moveNumberOf(node);
+        const label = node.move
+          ? (node.move.pass ? (lang === 'zh' ? '停' : 'pass') : GE.coordName(g.size, node.move.x, node.move.y))
+          : (node.setup ? '⊕' : '·');
+        const branchMark = (node.parent && node.parent.children.length > 1 && node.parent.children[0] !== node)
+          ? '▸ ' : '';
+        nodeEl.innerHTML = '<b>' + num + '</b> ' + branchMark + label;
+        nodeEl.addEventListener('click', () => goToNode(node));
+        row.appendChild(nodeEl);
+        container.appendChild(row);
+      }
+      node.children.forEach((c) => walk(c, depth + 1));
+    }
+    walk(g.root, 0);
+    const cur = container.querySelector('.tree-node.current');
+    if (cur && typeof cur.scrollIntoView === 'function') cur.scrollIntoView({ block: 'nearest' });
+  }
+  function goToNode(node) {
+    stopAutoplay();
+    if (state.mode === 'score') exitScoreMode();
+    game().current = node;
+    abandonEngine();
+    analysisSeq++;
+    requestedAnalysisNode = null;
+    state.pendingMove = null;
+    exitPreview();
+    clearAnalysisOverlay();
+    renderAll();
+    requestAnalysis(node);
+  }
+
+  /* ================= move quality ================= */
+  function updateQuality() {
+    const node = game().current;
+    const parent = node.parent;
+    if (!node.move || !parent) {
+      $('lastMoveCoord').textContent = '—';
+      $('lastMoveQuality').textContent = '—';
+      $('lastMoveQuality').className = 'quality-tag neutral';
+      $('lastMoveDelta').textContent = '';
+      return;
+    }
+    $('lastMoveCoord').textContent = coordOf(node);
+    const before = parent.analysisWrBlack;
+    const after = node.analysisWrBlack;
+    if (before === undefined || after === undefined) {
+      /* 分析进行中等待数据 → "…"；分析关闭（永远不会有数据）→ "—" */
+      $('lastMoveQuality').textContent = state.analysisOn ? '…' : '—';
+      $('lastMoveQuality').className = 'quality-tag neutral';
+      $('lastMoveDelta').textContent = '';
+      return;
+    }
+    const mover = node.move.color;
+    const gain = mover === BLACK ? after - before : before - after;
+    let cls = 'good', key = 'qualityGood';
+    if (gain < -0.08) { cls = 'bad'; key = 'qualityBad'; }
+    if (gain < -0.2) { cls = 'awful'; key = 'qualityAwful'; }
+    $('lastMoveQuality').textContent = t(key);
+    $('lastMoveQuality').className = 'quality-tag ' + cls;
+    $('lastMoveDelta').textContent = (gain >= 0 ? '+' : '') + (gain * 100).toFixed(1) + '%';
+  }
+
+  /* ================= review / training report ================= */
+  function reviewNodes() {
+    return [game().root].concat(game().mainLine());
+  }
+  function specFor(node) {
+    const pos = game().positionAt(node);
+    return {
+      size: game().size, komi: game().komi, toMove: pos.turn,
+      moves: movesListTo(node), setup: rootSetup()
+    };
+  }
+  function analyzeNodeForReview(node, useGtp, stepIdx) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const done = (review) => {
+        if (settled) return;
+        settled = true;
+        if (!useGtp) worker.removeEventListener('message', onMsg);
+        resolve(review);
+      };
+      if (useGtp) {
+        if (!gtp.info) return resolve(null);
+        const spec = specFor(node);
+        // 看门狗：桥接卡死时单手不能挂 90s——超时按失败处理，复盘可继续/可停止。
+        // 请求级 timeoutMs 略大于看门狗：请求本身不会占队列 90s（默认超时）。
+        let timedOut = false;
+        const watchdog = setTimeout(() => { timedOut = true; done(null); }, 15000);
+        // 复盘预算跟随「分析用时」设置：默认 2s→0.8s（与旧固定值一致），
+        // 调低分析=快速复盘，调高分析=深度复盘；钳制 0.4–4s 防走极端
+        const reviewSeconds = Math.max(0.4, Math.min(4, state.analysisSeconds * 0.4));
+        gtp.analyze(Object.assign({ seconds: reviewSeconds, topN: 3, ownership: false }, spec),
+          { timeoutMs: 17000 })
+          .then(res => {
+            clearTimeout(watchdog);
+            if (timedOut) return;
+            if (!res.ok || !res.candidates || !res.candidates.length) return done(null);
+            const pct = (typeof res.candidates[0].winrate === 'number' && isFinite(res.candidates[0].winrate))
+              ? Math.max(0, Math.min(100, res.candidates[0].winrate)) : 50;
+            const sl = res.candidates[0].scoreLead;
+            done({
+              wrBlack: spec.toMove === BLACK ? pct / 100 : 1 - pct / 100,
+              scoreLeadBlack: typeof sl === 'number' ? (spec.toMove === BLACK ? sl : -sl) : null,
+              best: res.candidates[0].pass ? { pass: true } : { x: res.candidates[0].x, y: res.candidates[0].y },
+              cands: res.candidates.map(c => c.pass ? { pass: true } : { x: c.x, y: c.y })
+            });
+          })
+          .catch(() => { clearTimeout(watchdog); if (!timedOut) done(null); });
+        return;
+      }
+      // 内置引擎：小预算快扫（动态 marker 在 postMessage 前定义）
+      const marker = 'review:' + stepIdx;
+      const onMsg = (e) => {
+        const msg = e.data || {};
+        if (msg.type !== 'result' || msg.marker !== marker) return;
+        if (msg.error || !msg.done) return;
+        done({
+          wrBlack: msg.winrate,
+          scoreLeadBlack: msg.scoreLead,
+          best: msg.best || null,
+          cands: (msg.candidates || []).map(c => c.pass ? { pass: true } : { x: c.x, y: c.y })
+        });
+      };
+      worker.addEventListener('message', onMsg);
+      invalidatePreview();
+      worker.postMessage({
+        type: 'analyze',
+        position: specFor(node),
+        opts: { maxVisits: 160, timeMs: 320, topN: 3, analysis: false },
+        marker
+      });
+      setTimeout(() => done(null), 8000);
+    });
+  }
+  function computeReviewMove(node, parent) {
+    const rv = node.review || {};
+    const p = parent.review || {};
+    if (!node.move || p.wrBlack === undefined || rv.wrBlack === undefined) {
+      rv.loss = 0; rv.grade = 'ok'; rv.matchRank = 0;
+      node.review = rv;
+      return;
+    }
+    const mover = node.move.color;
+    const gain = mover === BLACK ? rv.wrBlack - p.wrBlack : p.wrBlack - rv.wrBlack;
+    const loss = Math.max(0, -gain);
+    rv.loss = loss;
+    rv.grade = loss < 0.02 ? 'best' : loss < 0.08 ? 'ok' : loss < 0.2 ? 'bad' : 'awful';
+    // AI 吻合名次：实际落子在前一手 AI 候选中的排名（1=最佳）
+    rv.matchRank = 0;
+    if (p.cands && node.move) {
+      for (let k = 0; k < p.cands.length; k++) {
+        const c = p.cands[k];
+        if (c.pass && node.move.pass) { rv.matchRank = k + 1; break; }
+        if (!c.pass && !node.move.pass && c.x === node.move.x && c.y === node.move.y) { rv.matchRank = k + 1; break; }
+      }
+    }
+    // 复盘结果回流：胜率曲线 / 逐手质量卡可直接使用
+    if (typeof rv.wrBlack === 'number') {
+      if (node.analysisWrBlack === undefined) node.analysisWrBlack = rv.wrBlack;
+      if (typeof rv.scoreLeadBlack === 'number' && node.analysisScoreLeadBlack === undefined) {
+        node.analysisScoreLeadBlack = rv.scoreLeadBlack;
+      }
+    }
+    node.review = rv;
+  }
+  async function runReview() {
+    if (state.reviewRunning) return;
+    setWorkspace('review');
+    const nodes = reviewNodes();
+    if (nodes.length < 2) { showToast(t('reviewNoMoves')); return; }
+    const useGtp = analysisEngineKind() === 'gtp';
+    state.reviewRunning = true;
+    state.reviewStop = false;
+    abandonEngine();
+    analysisSeq++; requestedAnalysisNode = null; // 暂停实时分析
+    $('reviewStartBtn').classList.add('hidden');
+    $('reviewStopBtn').classList.remove('hidden');
+    for (let i = 0; i < nodes.length; i++) {
+      if (state.reviewStop) break;
+      setReviewProgress(i, nodes.length, false);
+      const node = nodes[i];
+      const rv = await analyzeNodeForReview(node, useGtp);
+      if (state.reviewStop) break;
+      node.review = rv || node.review || {};
+      if (typeof node.review.wrBlack === 'number' && node.analysisWrBlack === undefined) {
+        node.analysisWrBlack = node.review.wrBlack;
+        if (typeof node.review.scoreLeadBlack === 'number') node.analysisScoreLeadBlack = node.review.scoreLeadBlack;
+      }
+      if (i === 0) { /* root：仅记录基准胜率 */ }
+      else computeReviewMove(node, nodes[i - 1]);
+      renderReview(node);
+      drawEvalGraph();
+    }
+    setReviewProgress(nodes.length, nodes.length, true);
+    state.reviewRunning = false;
+    $('reviewStartBtn').classList.remove('hidden');
+    $('reviewStopBtn').classList.add('hidden');
+    renderReview();
+    showToast(state.reviewStop ? t('reviewStop') : t('reviewDone'));
+  }
+  function stopReview() { state.reviewStop = true; }
+
+  /* ================= 复盘自动播放（野狐/腾讯风格） ================= */
+  function updateAutoplayBtn() {
+    const b = $('autoplayBtn');
+    b.setAttribute('aria-pressed', String(state.autoplay));
+    const label = state.autoplay ? t('autoplayStop') : t('autoplay');
+    b.title = label;
+    b.setAttribute('aria-label', label);
+  }
+  function stopAutoplay() {
+    if (!state.autoplay) return;
+    state.autoplay = false;
+    clearInterval(state.autoplayTimer);
+    state.autoplayTimer = 0;
+    updateAutoplayBtn();
+  }
+  function toggleAutoplay() {
+    if (state.autoplay) { stopAutoplay(); return; }
+    if (!game().current.children.length) { showToast(t('reviewNoMoves')); return; }
+    state.autoplay = true;
+    updateAutoplayBtn();
+    state.autoplayTimer = setInterval(() => {
+      const g = game();
+      if (!g.current.children.length) { stopAutoplay(); renderAll(); renderReview(); return; }
+      g.navChild(0);
+      abandonEngine();
+      analysisSeq++;
+      requestedAnalysisNode = null;
+      state.pendingMove = null;
+      exitPreview();
+      renderAll();
+      renderReview();
+      requestAnalysis(g.current);
+    }, 900);
+  }
+
+  /* ================= KaTrain 风格"再练一手" =================
+   * 回到失误前一手：人类执失误方，最强在线引擎（KataGo 优先）扮演对手 */
+  function startPractice(node) {
+    if (state.analysisOn) $('analysisBtn').click();
+    stopAutoplay();
+    const mover = node.move ? node.move.color : game().positionAt(node).turn;
+    const target = node.parent || game().root;
+    if (state.mode === 'score') exitScoreMode();
+    state.opponent = gtp.info ? 'gtp' : 'builtin';
+  state.engineKind = state.opponent === 'gtp' ? 'gtp' : 'builtin';
+    state.humanColor = mover;
+    saveSettings();
+    goToNode(target);
+    setWorkspace('play');
+    switchTab('analysis');
+    showToast(t('practiceStart'));
+  }
+  /* 失误跳转：沿主线找上一处/下一处损失 ≥ 8% 的手 */
+  function navBlunder(dir) {
+    const main = game().mainLine();
+    const blunders = main.filter(n => n.move && n.review && n.review.loss >= 0.08);
+    if (!blunders.length) { showToast(t('noBlunders')); return; }
+    const ci = main.indexOf(game().current);
+    let target = null;
+    if (dir > 0) { for (const n of blunders) { if (main.indexOf(n) > ci) { target = n; break; } } }
+    else { for (let k = blunders.length - 1; k >= 0; k--) { if (main.indexOf(blunders[k]) < ci) { target = blunders[k]; break; } } }
+    if (!target) { showToast(t('noBlunders')); return; }
+    goToNode(target);
+    switchTab('analysis');
+    scrollReviewIntoView();
+  }
+  /* 落子音效：合成清脆的真实棋子声——高频敲击 + 木质共鸣 + 桌体低频 */
+  let audioCtx = null;
+  function playStoneSound(color) {
+    if (!state.soundOn) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      audioCtx = audioCtx || new AC();
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => { });
+      const t0 = audioCtx.currentTime;
+      const master = audioCtx.createGain();
+      master.gain.value = 0.9;
+      master.connect(audioCtx.destination);
+      const pitch = (color === BLACK ? 0.94 : 1.05) * (0.98 + Math.random() * 0.04);
+      // 1) 敲击瞬态：短噪声过带通，形成清脆 "嗒"
+      const len = Math.floor(audioCtx.sampleRate * 0.05);
+      const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buf;
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 2600 * pitch;
+      bp.Q.value = 0.9;
+      const nGain = audioCtx.createGain();
+      nGain.gain.setValueAtTime(0.85, t0);
+      nGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
+      noise.connect(bp); bp.connect(nGain); nGain.connect(master);
+      noise.start(t0);
+      // 2) 木质共鸣：两枚快速衰减的泛音
+      [[2093 * pitch, 0.09, 0.30], [3150 * pitch, 0.05, 0.14]].forEach(([f, dur, vol]) => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, t0);
+        g.gain.setValueAtTime(vol, t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(g); g.connect(master);
+        osc.start(t0); osc.stop(t0 + dur + 0.01);
+      });
+      // 3) 棋盘低频 "咚"（触底感）
+      const thump = audioCtx.createOscillator();
+      const tGain = audioCtx.createGain();
+      thump.type = 'sine';
+      thump.frequency.setValueAtTime(175 * pitch, t0);
+      thump.frequency.exponentialRampToValueAtTime(120 * pitch, t0 + 0.07);
+      tGain.gain.setValueAtTime(0.28, t0);
+      tGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
+      thump.connect(tGain); tGain.connect(master);
+      thump.start(t0); thump.stop(t0 + 0.1);
+    } catch (e) { /* 音频不可用则静默 */ }
+  }
+  function setReviewProgress(done, total, finished) {
+    const pct = total ? Math.round(100 * done / total) : 0;
+    $('reviewBar').style.width = pct + '%';
+    $('reviewProgress').textContent =
+      finished ? (state.reviewStop ? t('reviewStop') : t('reviewDone')) : t('reviewRunning') + ' ' + done + '/' + total;
+  }
+  function fmtWrPct(wrBlack, mover) {
+    if (typeof wrBlack !== 'number') return '—';
+    const wr = mover === BLACK ? wrBlack : 1 - wrBlack;
+    return Math.round(wr * 100) + '%';
+  }
+  function reviewRowHtml(node, moveNo) {
+    const rv = node.review || {};
+    const mover = node.move.color;
+    const coord = node.move.pass ? t('pass') : GE.coordName(game().size, node.move.x, node.move.y);
+    let slTxt = '—';
+    if (typeof rv.scoreLeadBlack === 'number') slTxt = (rv.scoreLeadBlack >= 0 ? 'B+' : 'W+') + Math.abs(rv.scoreLeadBlack).toFixed(1);
+    const lossTxt = rv.loss !== undefined && node.move.pass === false ? '-' + (rv.loss * 100).toFixed(1) + '%' : '—';
+    const lossCls = rv.loss !== undefined ? (rv.loss >= 0.2 ? 'rv-loss-awful' : rv.loss >= 0.08 ? 'rv-loss-neg' : '') : '';
+    let gradeTxt = '—', gradeCls = 'ok';
+    if (rv.grade) {
+      gradeCls = rv.grade;
+      gradeTxt = rv.grade === 'best' ? t('qualityGood') : rv.grade === 'ok' ? t('gradeOk') :
+        rv.grade === 'bad' ? t('qualityBad') : t('qualityAwful');
+      if (node.move.pass) { gradeTxt = '—'; gradeCls = 'ok'; }
+    }
+    let aiTxt = '—', aiCls = '';
+    if (rv.matchRank === 1) { aiTxt = '#1'; aiCls = 'rank1'; }
+    else if (rv.matchRank === 2 || rv.matchRank === 3) { aiTxt = '#' + rv.matchRank; aiCls = 'rank23'; }
+    else if (rv.matchRank === 0 && rv.wrBlack !== undefined) { aiTxt = '✗'; aiCls = 'miss'; }
+    const canDrill = rv.loss !== undefined && rv.loss >= 0.08 && !node.move.pass && !state.reviewRunning;
+    return {
+      cls: 'rv-move' + (node === game().current ? ' current' : ''),
+      html:
+        '<td>' + moveNo + '</td>' +
+        '<td><i class="rv-stone ' + (mover === BLACK ? 'black' : 'white') + '"></i></td>' +
+        '<td class="rv-coord">' + coord + '</td>' +
+        '<td>' + fmtWrPct(rv.wrBlack, mover) + '</td>' +
+        '<td>' + slTxt + '</td>' +
+        '<td class="' + lossCls + '">' + lossTxt + '</td>' +
+        '<td><span class="grade-badge ' + gradeCls + '">' + gradeTxt + '</span></td>' +
+        '<td><span class="rv-ai ' + aiCls + '">' + aiTxt + '</span></td>' +
+        '<td>' + (canDrill ? '<button type="button" class="rv-practice" title="' + t('practiceTip') + '">' + t('practice') + '</button>' : '') + '</td>'
+    };
+  }
+  function reviewBindRow(tr, node) {
+    tr.addEventListener('click', () => goToNode(node));
+    const drillBtn = tr.querySelector('.rv-practice');
+    if (drillBtn) drillBtn.addEventListener('click', (e) => { e.stopPropagation(); startPractice(node); });
+  }
+  /* updatedNode：runReview 每分析完一手传入，仅更新该行（200 手对局由 O(n²) 降到 O(n)）；
+   * 其余调用（导航/换局/语言/复盘结束）全量重建。 */
+  function renderReview(updatedNode) {
+    if (state.activeTab !== 'analysis') return;
+    const nodes = reviewNodes();
+    const moves = nodes.filter(n => n.move);
+    const hasData = moves.some(n => n.review && n.review.wrBlack !== undefined);
+    $('reviewEmpty').hidden = hasData || state.reviewRunning;
+    // —— 技术统计卡 ——
+    const summary = $('reviewSummary');
+    if (!hasData) { summary.hidden = true; summary.textContent = ''; }
+    else {
+      summary.hidden = false;
+      summary.textContent = '';
+      const stat = (color) => {
+        const ms = moves.filter(n => n.move.color === color && n.review && n.review.loss !== undefined && !n.move.pass);
+        const n = ms.length;
+        const match1 = ms.filter(m => m.review.matchRank === 1).length;
+        const match3 = ms.filter(m => m.review.matchRank >= 1 && m.review.matchRank <= 3).length;
+        const avgLoss = n ? ms.reduce((a, m) => a + m.review.loss, 0) / n * 100 : 0;
+        const grades = { best: 0, ok: 0, bad: 0, awful: 0 };
+        ms.forEach(m => grades[m.review.grade]++);
+        let worst = null;
+        for (const m of ms) if (!worst || m.review.loss > worst.review.loss) worst = m;
+        return { color, n, match1, match3, avgLoss, grades, worst };
+      };
+      for (const color of [BLACK, WHITE]) {
+        const s = stat(color);
+        const card = document.createElement('div');
+        card.className = 'review-card';
+        const worstTxt = s.worst
+          ? (s.worst.move.pass ? t('pass') : GE.coordName(game().size, s.worst.move.x, s.worst.move.y)) +
+            ' -' + (s.worst.review.loss * 100).toFixed(1) + '%'
+          : '—';
+        const rate1 = s.n ? Math.round(100 * s.match1 / s.n) : 0;
+        const rate3 = s.n ? Math.round(100 * s.match3 / s.n) : 0;
+        card.innerHTML =
+          '<h4><i class="rv-stone ' + (color === BLACK ? 'black' : 'white') + '"></i>' +
+          (game().playerNames[color] || (color === BLACK ? t('black') : t('white'))) + '</h4>' +
+          '<div class="review-stats">' +
+          '<span>' + t('aiMatch') + '</span><b class="' + (rate1 >= 60 ? 'match-hi' : rate1 < 35 ? 'match-lo' : '') + '">' + rate1 + '%</b>' +
+          '<span>' + t('top3Match') + '</span><b>' + rate3 + '%</b>' +
+          '<span>' + t('avgLoss') + '</span><b>-' + s.avgLoss.toFixed(2) + '%</b>' +
+          '<span>' + t('qualityGood') + '/' + t('gradeOk') + '</span><b>' + s.grades.best + ' / ' + s.grades.ok + '</b>' +
+          '<span>' + t('qualityBad') + '/' + t('qualityAwful') + '</span><b>' + s.grades.bad + ' / ' + s.grades.awful + '</b>' +
+          '<span>' + t('worstMove') + '</span><b>' + worstTxt + '</b>' +
+          '</div>';
+        summary.appendChild(card);
+      }
+    }
+    // —— 每手明细表 ——
+    const table = $('reviewTable');
+    // 增量路径：复盘中且指定了刚分析完的节点 → 只更新该行
+    if (updatedNode && state.reviewRunning && table.tBodies.length === 1) {
+      const idx = moves.indexOf(updatedNode);
+      if (idx >= 0) {
+        const tr = table.tBodies[0].rows[idx];
+        if (tr) {
+          const row = reviewRowHtml(updatedNode, idx + 1);
+          const fresh = document.createElement('tr');
+          fresh.className = row.cls;
+          fresh.innerHTML = row.html;
+          reviewBindRow(fresh, updatedNode);
+          tr.replaceWith(fresh);
+          return;
+        }
+      }
+    }
+    table.textContent = '';
+    if (!hasData && !state.reviewRunning) return;
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>#</th><th></th><th>' + t('thCoord') + '</th><th>' + t('thWinrate') + '</th><th>' +
+      t('thScore') + '</th><th>' + t('thLoss') + '</th><th>' + t('thGrade') + '</th><th>' + t('thAi') + '</th><th></th></tr>';
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    let moveNo = 0;
+    for (const node of nodes) {
+      if (!node.move) continue;
+      moveNo++;
+      const row = reviewRowHtml(node, moveNo);
+      const tr = document.createElement('tr');
+      tr.className = row.cls;
+      tr.innerHTML = row.html;
+      reviewBindRow(tr, node);
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+  }
+
+  /* ================= master render ================= */
+  function renderBoard() {
+    const pos = position();
+    const g = game();
+    const cached = analysisCache.get(g.current.id);
+    let candidateData = (state.analysisOn && cached && cached.candidates || []).map(c => ({
+      x: c.x, y: c.y, visits: c.visits, pass: c.pass, wrToMove: c.wrToMove
+    }));
+    if (state.candSort === 'winrate') {
+      candidateData = candidateData.slice().sort((p, q) => (q.wrToMove || 0) - (p.wrToMove || 0));
+    }
+    renderer.set({
+      size: g.size,
+      stones: pos.board,
+      lastMove: pos.lastMove,
+      moveNumbers: state.showNumbers ? buildNumbersFromPath() : null,
+      candidates: candidateData,
+      candColorMode: state.candColor,
+      ownership: cached ? cached.ownership : null,
+      showOwnership: state.showOwnership,
+      territory: state.mode === 'score' ? currentScore().territory : null,
+      dead: state.mode === 'score' ? state.deadStones : null,
+      preview: renderer.opts.preview,
+      hover: renderer.opts.hover,
+      pending: state.pendingMove ? { x: state.pendingMove.x, y: state.pendingMove.y, color: toMove() } : null,
+      flip: state.flip,
+      showCoords: state.showCoords,
+      showNumbers: state.showNumbers,
+      toMove: pos.turn
+    });
+    renderer.requestRender();
+  }
+  function buildNumbersFromPath() {
+    const map = new Map();
+    let n = 0;
+    for (const node of game().pathFromRoot(game().current)) {
+      if (node.move && !node.move.pass) map.set(node.move.y * game().size + node.move.x, ++n);
+    }
+    return map;
+  }
+  function sideIsEngine(color) {
+    if (state.opponent === 'human') return false;
+    return color !== state.humanColor;
+  }
+  function engineLabel() {
+    if (state.opponent === 'gtp') return (gtp.info && gtp.info.name) || 'GTP';
+    return (lang === 'zh' ? '内置 MCTS · ' : 'MCTS · ') + state.strength;
+  }
+  function renderSide() {
+    const g = game();
+    const pos = position();
+    $('blackCaptures').textContent = pos.captures[BLACK];
+    $('whiteCaptures').textContent = pos.captures[WHITE];
+    const ruleKeys = { chinese: 'ruleCn', japanese: 'ruleJp', korean: 'ruleKr' };
+    $('infoRule').textContent = t(ruleKeys[g.rules] || 'ruleCn');
+    $('infoKomi').textContent = g.komi;
+    $('infoHandicap').textContent = g.handicap || 0;
+    $('infoMoves').textContent = moveNumberOf(g.current);
+    $('infoResult').textContent = g.result || '—';
+    $('infoHandicapItem').hidden = !(g.handicap > 0);
+    $('infoResultItem').hidden = !g.result;
+    $('blackName').textContent = g.playerNames[BLACK] || t('black');
+    $('whiteName').textContent = g.playerNames[WHITE] || t('white');
+    /* 段位/引擎说明与名字语义重复时（如"MCTS 5"配"内置 MCTS · 5"）不再显示第二行 */
+    const core = (s) => String(s).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '');
+    const rankOf = (color) => {
+      const name = g.playerNames[color] || '';
+      const rank = g.playerRanks[color] || (sideIsEngine(color) ? engineLabel() : '');
+      if (!rank || !name) return rank;
+      const cn = core(name), cr = core(rank);
+      return (cn && cr && (cn.indexOf(cr) >= 0 || cr.indexOf(cn) >= 0)) ? '' : rank;
+    };
+    $('blackRank').textContent = rankOf(BLACK);
+    $('whiteRank').textContent = rankOf(WHITE);
+    $('blackCard').classList.toggle('active', pos.turn === BLACK && !g.result && state.mode === 'play');
+    $('whiteCard').classList.toggle('active', pos.turn === WHITE && !g.result && state.mode === 'play');
+    $('statusNav').textContent = state.previewNode ? t('previewing')
+      : state.pendingMove ? t('pendingConfirm')
+        : t('livePosition');
+  }
+  function renderAll() {
+    if (!state.game) return;
+    renderBoard();
+    renderSide();
+    renderTree();
+    syncCommentBox();
+    renderReview();
+    updateQuality();
+    const cached = analysisCache.get(game().current.id);
+    if (cached && state.analysisOn) updateAnalysisUI(cached);
+    else {
+      $('winrateFill').style.width = '50%';
+      $('winrateBlackLabel').textContent = '—';
+      $('winrateWhiteLabel').textContent = '—';
+      $('scoreLead').textContent = '—';
+      $('candidateList').textContent = '';
+      $('pvLine').textContent = '';
+      $('candEmpty').hidden = false;
+    }
+    updateTimeline();
+    drawEvalGraph();
+    $('undoBtn').disabled = !game().current.parent;
+    $('redoBtn').disabled = !game().current.children.length;
+    $('statusEngine').textContent = state.workspace === 'review' ? t('reviewPosition') : game().result ? t('gameOver') : (isHumanTurn() ? t('youTurn') : t('ready'));
+  }
+
+  /* ================= actions ================= */
+  function doUndo() {
+    const g = game();
+    if (!g.current.parent) return;
+    stopAutoplay();
+    if (state.mode === 'score') exitScoreMode();
+    g.navParent();
+    if (state.workspace === 'play' && state.opponent !== 'human' && state.mode === 'play') {
+      let guard = 3;
+      while (guard-- > 0 && g.current.parent && !game().result && position().turn !== state.humanColor) {
+        g.navParent();
+      }
+    }
+    abandonEngine();
+    analysisSeq++;
+    requestedAnalysisNode = null;
+    state.pendingMove = null;
+    exitPreview();
+    clearAnalysisOverlay();
+    renderAll();
+    requestAnalysis(g.current);
+  }
+  function doRedo() {
+    const g = game();
+    if (!g.current.children.length) return;
+    stopAutoplay();
+    if (state.mode === 'score') exitScoreMode();
+    g.navChild(0);
+    abandonEngine();
+    analysisSeq++;
+    requestedAnalysisNode = null;
+    state.pendingMove = null;
+    exitPreview();
+    clearAnalysisOverlay();
+    renderAll();
+    /* 仅当重放到线尾且轮到引擎时才请求引擎续弈，中途重放不再让引擎重新生成（避免分叉） */
+    if (!g.current.children.length && state.workspace === 'play' && effOpponent() !== 'human' &&
+        state.mode === 'play' && !game().result && position().turn !== state.humanColor) {
+      requestEngineMove();
+    } else {
+      requestAnalysis(g.current);
+    }
+  }
+  function newGame(opts) {
+    /* 中断进行中的复盘与数子，避免旧状态污染新对局 */
+    if (state.reviewRunning) {
+      state.reviewStop = true; state.reviewRunning = false;
+      $('reviewStartBtn').classList.remove('hidden');
+      $('reviewStopBtn').classList.add('hidden');
+    }
+    if (state.mode === 'score') exitScoreMode();
+    state.workspace = 'play';
+    document.body.dataset.workspace = 'play';
+    $('reviewToggleBtn').setAttribute('aria-pressed', 'false');
+    state.game = new GE.Game(opts);
+    if (opts.names) {
+      game().playerNames[BLACK] = opts.names[BLACK] || '';
+      game().playerNames[WHITE] = opts.names[WHITE] || '';
+    }
+    if (opts.ranks) {
+      game().playerRanks[BLACK] = opts.ranks[BLACK] || '';
+      game().playerRanks[WHITE] = opts.ranks[WHITE] || '';
+    }
+    state.mode = 'play';
+    state.previewNode = null;
+    state.pendingMove = null;
+    state.deadStones.clear();
+    clearAnalysisOverlay();
+    stopAutoplay();
+    analysisCache.clear();
+    abandonEngine();
+    analysisSeq++;
+    requestedAnalysisNode = null;
+    renderAll();
+    requestAnalysis(game().current);
+    if (effOpponent() !== 'human' && position().turn !== state.humanColor) requestEngineMove();
+  }
+  /* 棋局内容【不】再写入 localStorage（2026-09-07 用户要求）：
+   * localStorage 只存设置（got.settings / got.lang），对局数据一律在内存里，
+   * 想留存棋谱用「保存」下载 SGF 文件。原先的 got.sgf 自动存盘已整体移除。 */
+
+  /* ================= dialogs ================= */
+  function openDialog(id) { try { $(id).showModal(); } catch (e) { } }
+  function closeDialog(id) { try { $(id).close(); } catch (e) { } }
+  function segmented(id, onChange) {
+    $(id).addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn || !$(id).contains(btn)) return;
+      for (const b of $(id).querySelectorAll('button')) b.classList.remove('selected');
+      btn.classList.add('selected');
+      if (onChange) onChange(btn);
+    });
+  }
+  segmented('ngSize');
+  segmented('ngSide');
+  /* KataGo 在线就是默认对手（最强 AI）：boot 时桥还没探完，对话框往往先按
+   * "未连接"渲染成内置 AI，等 health 回来再补切一次。已开局或用户手动选过就不抢。 */
+  let userPickedOpponent = false;
+  segmented('ngOpponent', (btn) => {
+    userPickedOpponent = true;                 // 手动选过 → 不再被"默认 KataGo"覆盖
+    $('ngStrengthLabel').style.display = btn.dataset.opp === 'human' ? 'none' : '';
+    updateNgEngineHint();
+  });
+  segmented('ngStrength');
+  function applyDefaultOpponent() {
+    if (userPickedOpponent || !gtp.info) return;
+    const g = game();
+    if (g && g.current !== g.root) return;      // 已经落子 → 不中途换引擎打扰对局
+    state.opponent = 'gtp';
+    const box = $('ngOpponent');
+    if (!box) return;
+    for (const b of box.querySelectorAll('button')) b.classList.toggle('selected', b.dataset.opp === 'gtp');
+    $('ngStrengthLabel').style.display = '';
+    updateNgEngineHint();
+  }
+
+  /* 新对局对话框：所选对手为 KataGo 时显示引擎连接状态 */
+  function updateNgEngineHint() {
+    const el = $('ngEngineHint');
+    if (!el) return;
+    const sel = $('ngOpponent').querySelector('.selected');
+    if (!sel || sel.dataset.opp !== 'gtp') { el.hidden = true; return; }
+    el.hidden = false;
+    if (gtp.info) {
+      el.classList.add('online');
+      el.textContent = t('connectOk') + gtp.info.name + ' ' + (gtp.info.version || '');
+    } else {
+      el.classList.remove('online');
+      el.textContent = t('ngEngineOff');
+    }
+  }
+
+  $('newGameBtn').addEventListener('click', () => {
+    openDialog('newGameDialog');
+    syncNewGameDialog();
+    updateNgEngineHint();
+  });
+  /* 新对局对话框固定默认：中国规则 · 19 路 · 自动执子 · 棋力 5 · 让子 0；
+   * 对手默认 KataGo——未连接时先选内置 AI，health 回来后由 applyDefaultOpponent 补切。
+   * 用时保持上次设置。 */
+  function syncNewGameDialog() {
+    const sel = (id, attr, val) => {
+      for (const b of $(id).querySelectorAll('button')) b.classList.toggle('selected', b.dataset[attr] === String(val));
+    };
+    userPickedOpponent = false;
+    sel('ngSize', 'size', 19);
+    sel('ngSide', 'side', 'auto');
+    sel('ngOpponent', 'opp', gtp.info ? 'gtp' : 'builtin');
+    sel('ngStrength', 's', 5);
+    $('ngRule').value = 'chinese';
+    $('ngHandicap').value = '0';
+    $('ngTime').value = String(state.timeMs);
+    $('ngStrengthLabel').style.display = '';
+  }
+  $('ngCancel').addEventListener('click', () => closeDialog('newGameDialog'));
+  $('ngStart').addEventListener('click', () => {
+    const size = Number($('ngSize').querySelector('.selected').dataset.size);
+    const rules = $('ngRule').value;
+    const handicap = Number($('ngHandicap').value);
+    const side = $('ngSide').querySelector('.selected').dataset.side;
+    const opp = $('ngOpponent').querySelector('.selected').dataset.opp;
+    const strength = Number($('ngStrength').querySelector('.selected').dataset.s);
+    const timeMs = Number($('ngTime').value);
+    state.opponent = opp;
+    state.strength = strength;
+    state.timeMs = timeMs;
+    state.humanColor = side === 'auto' ? (Math.random() < 0.5 ? BLACK : WHITE) : (side === 'white' ? WHITE : BLACK);
+    saveSettings();
+    /* 让子局惯例贴 0.5（或 0）——分先规则贴目不该原样带进让子局 */
+    const baseKomi = (GE.RULES[rules] && GE.RULES[rules].komi) || 7.5;
+    const komi = handicap >= 2 ? 0.5 : baseKomi;
+    const names = {};
+    names[BLACK] = ''; names[WHITE] = '';
+    names[state.humanColor] = t('you');
+    const engineName = opp === 'gtp' ? ((gtp.info && gtp.info.name) || 'KataGo') : (lang === 'zh' ? '内置 AI ' : 'MCTS ') + strength;
+    names[state.humanColor === BLACK ? WHITE : BLACK] = opp === 'human' ? (lang === 'zh' ? '棋手' : 'Player') : engineName;
+    closeDialog('newGameDialog');
+    newGame({ size, rules, komi, handicap, names });
+    /* 选了 KataGo 但桥不可用：不再只弹提示干等（那会让 AI 一手都不下）——
+     * 明确告知已改用内置 AI，requestEngineMove 会自动降级续弈。 */
+    if (opp === 'gtp' && !gtp.info) { gtpDownNotified = false; noteGtpFallback(); }
+    updateEnginePill();
+  });
+
+  $('engineSettingsBtn').addEventListener('click', () => {
+    $('bridgeUrl').value = gtp.baseUrl;
+    $('engSeconds').value = String(state.analysisSeconds);
+    $('engStatus').classList.remove('online');
+    $('engStatus').textContent = gtp.info ? t('connectOk') + gtp.info.name + ' ' + (gtp.info.version || '') : '';
+    openDialog('engineDialog');
+  });
+  /* 显示设置：候选圈颜色 / 列表排序，改动即时生效并持久化 */
+  $('displaySettingsBtn').addEventListener('click', () => {
+    $('dsCandColor').value = state.candColor;
+    $('dsCandSort').value = state.candSort;
+    openDialog('displayDialog');
+  });
+  $('dsCandColor').addEventListener('change', () => {
+    state.candColor = $('dsCandColor').value === 'rank' ? 'rank' : 'winrate';
+    saveSettings();
+    renderBoard();
+  });
+  $('dsCandSort').addEventListener('change', () => {
+    state.candSort = $('dsCandSort').value === 'winrate' ? 'winrate' : 'visits';
+    saveSettings();
+    const cached = analysisCache.get(game().current.id);
+    if (cached) updateAnalysisUI(cached, false);   // 重建右栏列表顺序
+    renderBoard();
+  });
+  $('engQuick').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-url]');
+    if (!btn) return;
+    $('bridgeUrl').value = btn.dataset.url;
+  });
+  $('engClose').addEventListener('click', () => closeDialog('engineDialog'));
+  $('engConnect').addEventListener('click', async () => {
+    state.analysisSeconds = Number($('engSeconds').value) || 2;
+    gtp.baseUrl = $('bridgeUrl').value.replace(/\/$/, '');
+    saveSettings();
+    $('engStatus').classList.remove('online');
+    $('engStatus').textContent = '…';
+    const res = await gtp.health(6000);
+    if (res.ok) {
+      gtp.info = res.engine;
+      $('engStatus').classList.add('online');
+      $('engStatus').textContent = t('connectOk') + res.engine.name + ' ' + (res.engine.version || '') +
+        (res.engine.supportsAnalyze ? '' : (lang === 'zh' ? '（仅 genmove）' : ' (genmove only)'));
+      updateEnginePill();
+      showToast(t('connectOk') + res.engine.name);
+    } else {
+      $('engStatus').textContent = t('connectFail') + friendlyFetchError(res.error || '');
+    }
+  });
+  function updateEnginePill() {
+    const pill = $('enginePill');
+    if (gtp.info) {
+      pill.classList.add('online');
+      $('enginePillText').textContent = gtp.info.name + (gtp.info.version ? ' ' + gtp.info.version : '');
+    } else {
+      pill.classList.remove('online');
+      $('enginePillText').textContent = t('engineOff');
+    }
+  }
+
+  /* 手动逃生舱：怀疑"看到的还是旧代码"时一键清缓存重载（SW 保留，离线仍可用） */
+  const clearCacheBtn = $('clearCacheBtn');
+  if (clearCacheBtn) clearCacheBtn.addEventListener('click', () => purgeCaches().then(() => reloadFresh(t('cacheCleared'))));
+
+  $('resignBtn').addEventListener('click', () => {
+    if (game().result) return;
+    openDialog('resignDialog');
+  });
+  $('rsCancel').addEventListener('click', () => closeDialog('resignDialog'));
+  $('rsConfirm').addEventListener('click', () => {
+    closeDialog('resignDialog');
+    const loser = state.opponent === 'human' ? toMove() : state.humanColor;
+    const winner = loser === BLACK ? 'W' : 'B';
+    game().result = winner + '+R';
+    game().infoProps();
+    setThinking(BLACK, false); setThinking(WHITE, false);
+    moveSeq++; analysisSeq++;
+    renderAll();
+  });
+
+  $('scoreBtn').addEventListener('click', () => {
+    if (state.mode === 'score') exitScoreMode();
+    else enterScoreMode();
+  });
+  $('scoreAutoBtn').addEventListener('click', () => {
+    if (state.mode !== 'score') return;
+    autoMarkDead(true).then(() => { updateScoreUI(); renderBoard(); });
+  });
+  $('scoreClearBtn').addEventListener('click', () => {
+    if (state.mode !== 'score') return;
+    state.deadStones.clear();
+    updateScoreUI();
+    renderBoard();
+  });
+  $('scoreDoneBtn').addEventListener('click', () => openDialog('scoreDialog'));
+  $('scKeep').addEventListener('click', () => { closeDialog('scoreDialog'); exitScoreMode(); });
+  $('scConfirm').addEventListener('click', () => {
+    const sc = currentScore();
+    game().result = sc.result;
+    game().infoProps();
+    closeDialog('scoreDialog');
+    exitScoreMode();
+    renderAll();
+  });
+
+  $('undoBtn').addEventListener('click', doUndo);
+  $('redoBtn').addEventListener('click', doRedo);
+  $('passBtn').addEventListener('click', () => { if (isHumanTurn()) humanPass(); });
+  $('numbersBtn').addEventListener('click', () => {
+    state.showNumbers = !state.showNumbers;
+    $('numbersBtn').setAttribute('aria-pressed', String(state.showNumbers));
+    renderBoard();
+  });
+  $('analysisBtn').addEventListener('click', () => {
+    state.analysisOn = !state.analysisOn;
+    $('analysisBtn').setAttribute('aria-pressed', String(state.analysisOn));
+    if (state.analysisOn) {
+      /* 开分析自动带上自动推演：候选/悬停推演即刻可用（会话级） */
+      if (!state.autoPreview) {
+        state.autoPreview = true;
+        $('autoPreviewBtn').setAttribute('aria-pressed', 'true');
+      }
+      requestAnalysis(game().current);
+    } else {
+      // 关闭分析：在途请求一并作废，避免晚到结果重新点亮候选区；推演一并收起
+      analysisSeq++;
+      requestedAnalysisNode = null;
+      if (state.autoPreview) {
+        state.autoPreview = false;
+        $('autoPreviewBtn').setAttribute('aria-pressed', 'false');
+      }
+      cancelAutoPreview();
+      clearPreview();
+      renderer.set({ candidates: [], ownership: null });
+      renderBoard();
+    }
+  });
+  $('ownershipBtn').addEventListener('click', () => {
+    state.showOwnership = !state.showOwnership;
+    $('ownershipBtn').setAttribute('aria-pressed', String(state.showOwnership));
+    renderBoard();
+  });
+  $('flipBtn').addEventListener('click', () => {
+    state.flip = !state.flip;
+    $('flipBtn').setAttribute('aria-pressed', String(state.flip));
+    saveSettings();
+    renderBoard();
+  });
+  $('confirmBtn').addEventListener('click', () => {
+    state.confirmMove = !state.confirmMove;
+    $('confirmBtn').setAttribute('aria-pressed', String(state.confirmMove));
+    if (!state.confirmMove && state.pendingMove) { state.pendingMove = null; renderBoard(); }
+    saveSettings();
+    renderSide();
+  });
+  $('coordsBtn').addEventListener('click', () => {
+    state.showCoords = !state.showCoords;
+    $('coordsBtn').setAttribute('aria-pressed', String(state.showCoords));
+    saveSettings();
+    renderBoard();
+  });
+  $('autoplayBtn').addEventListener('click', toggleAutoplay);
+
+  $('tabAnalysis').addEventListener('click', () => switchTab('analysis'));
+  $('tabTree').addEventListener('click', () => switchTab('tree'));
+  function switchTab(name) {
+    state.activeTab = name;
+    const pages = { analysis: 'pageAnalysis', tree: 'pageTree' };
+    const tabs = { analysis: 'tabAnalysis', tree: 'tabTree' };
+    for (const k of Object.keys(pages)) {
+      $(pages[k]).classList.toggle('hidden', k !== name);
+      $(tabs[k]).classList.toggle('selected', k === name);
+      $(tabs[k]).setAttribute('aria-selected', String(k === name));
+    }
+    if (name === 'analysis') renderAll();
+    else renderTree();
+  }
+  /* 复盘训练区已并入分析页：进入复盘工作区/失误跳转时滚到该区 */
+  function scrollReviewIntoView() {
+    const el = document.querySelector('#pageAnalysis .review-divider');
+    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'start' });
+  }
+  $('reviewStartBtn').addEventListener('click', runReview);
+  $('reviewStopBtn').addEventListener('click', stopReview);
+  $('treeMainBtn').addEventListener('click', () => {
+    let n = game().root;
+    while (n.children.length) n = n.children[0];
+    goToNode(n);
+  });
+
+  $('openBtn').addEventListener('click', () => $('fileInput').click());
+  $('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result);
+        const g = text.trim().startsWith('(') ? GE.sgfToGame(text) : importJson(text);
+        if (!g) throw new Error('format');
+        state.game = g;
+        state.mode = 'play';
+        state.opponent = 'human';
+        state.humanColor = toMove();
+        analysisCache.clear();
+        if (state.workspace === 'review') {
+          state.workspace = 'play';
+          document.body.dataset.workspace = 'play';
+          $('reviewToggleBtn').setAttribute('aria-pressed', 'false');
+        }
+        while (g.current.children.length) g.navChild(0);
+        abandonEngine();
+        analysisSeq++;
+        requestedAnalysisNode = null;
+        clearAnalysisOverlay();
+        /* opponent 仅会话内改为双人（棋谱不接引擎续弈），不持久化——
+         * 否则用户的 KataGo 对手偏好会被一次"打开棋谱"悄悄改写 */
+        updateEnginePill();
+        renderAll();
+        requestAnalysis(g.current);
+        showToast(t('loadedSgf'));
+      } catch (err) {
+        showToast(t('loadFail') + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+  function importJson(text) {
+    const data = JSON.parse(text);
+    if (!data || !Array.isArray(data.moves)) return null;
+    const g = new GE.Game({ size: data.size || 19, rules: data.rules || 'chinese', komi: data.komi });
+    for (const m of data.moves) {
+      if (m.pass) g.pass(m.color); else g.play(m.color, m.x, m.y);
+    }
+    return g;
+  }
+  /* 把已知的每手胜率/损失/评级写入节点备注（Lizzie/KaTrain 风格），随 SGF 一起导出 */
+  function annotateSgfComments() {
+    for (const node of game().mainLine()) {
+      if (!node.move || node._annotated) continue;
+      const rv = node.review || {};
+      const wr = typeof node.analysisWrBlack === 'number' ? node.analysisWrBlack : rv.wrBlack;
+      if (typeof wr !== 'number') continue;
+      const mover = node.move.color;
+      const wrMover = mover === BLACK ? wr : 1 - wr;
+      let line = (lang === 'zh' ? '胜率 ' : 'WR ') + Math.round(wrMover * 100) + '%';
+      if (rv.loss !== undefined && !node.move.pass) {
+        line += (lang === 'zh' ? ' · 损失 -' : ' · Loss -') + (rv.loss * 100).toFixed(1) + '%';
+        if (rv.grade) {
+          line += ' · ' + (rv.grade === 'best' ? t('qualityGood') : rv.grade === 'ok' ? t('gradeOk') :
+            rv.grade === 'bad' ? t('qualityBad') : t('qualityAwful'));
+        }
+      }
+      if (typeof node.analysisScoreLeadBlack === 'number') {
+        const sl = node.analysisScoreLeadBlack;
+        line += ' · ' + (sl >= 0 ? 'B+' : 'W+') + Math.abs(sl).toFixed(1);
+      }
+      node.comment = node.comment ? node.comment + '\n' + line : line;
+      node._annotated = true;
+    }
+  }
+  $('saveBtn').addEventListener('click', () => {
+    annotateSgfComments();
+    const sgf = GE.gameToSgf(game());
+    const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'got-' + new Date().toISOString().slice(0, 10) + '.sgf';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+
+  /* 当前手备注编辑（写入 SGF C[]），与自动存盘共用同一防抖 */
+  $('commentBox').addEventListener('input', () => {
+    if (!state.game) return;
+    game().current.comment = $('commentBox').value;
+  });
+  function syncCommentBox() {
+    const cb = $('commentBox');
+    if (document.activeElement !== cb) cb.value = game().current.comment || '';
+  }
+
+  function applyI18n() {
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    $('languageToggle').textContent = lang === 'zh' ? 'EN' : '中';
+    for (const el of document.querySelectorAll('[data-i18n]')) {
+      const key = el.getAttribute('data-i18n');
+      if (I18N[lang][key] !== undefined) el.textContent = I18N[lang][key];
+    }
+    for (const el of document.querySelectorAll('[data-i18n-title]')) {
+      const key = el.getAttribute('data-i18n-title');
+      if (I18N[lang][key] !== undefined) el.title = I18N[lang][key];
+    }
+    for (const el of document.querySelectorAll('[data-i18n-placeholder]')) {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (I18N[lang][key] !== undefined) el.placeholder = I18N[lang][key];
+    }
+    updateAutoplayBtn(); // 播放/暂停是动态文案，data-i18n 覆盖后需按状态重设
+    updateEnginePill();  // 引擎徽章文案同样可能被 data-i18n 覆盖
+  }
+  $('languageToggle').addEventListener('click', () => {
+    lang = lang === 'zh' ? 'en' : 'zh';
+    localStorage.setItem('got.lang', lang);
+    applyI18n();
+    renderAll();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target && e.target.matches && e.target.matches('input, select, textarea')) return;
+    if (document.querySelector('dialog[open]') || e.ctrlKey || e.metaKey || e.altKey) return;
+    const g = game();
+    switch (e.key) {
+      case 'Home': navigateTimeline('first'); e.preventDefault(); break;
+      case 'End': navigateTimeline('last'); e.preventDefault(); break;
+      case 'ArrowLeft': state.workspace === 'review' ? navigateTimeline(-1) : doUndo(); e.preventDefault(); break;
+      case 'ArrowRight': state.workspace === 'review' ? navigateTimeline(1) : doRedo(); e.preventDefault(); break;
+      case 'ArrowUp': {
+        const p = g.current.parent;
+        if (p) {
+          const i = p.children.indexOf(g.current);
+          if (i > 0) { goToNode(p.children[i - 1]); e.preventDefault(); }
+        }
+        break;
+      }
+      case 'ArrowDown': {
+        const p = g.current.parent;
+        if (p) {
+          const i = p.children.indexOf(g.current);
+          if (i < p.children.length - 1) { goToNode(p.children[i + 1]); e.preventDefault(); }
+        }
+        break;
+      }
+      case 'p': case 'P': if (isHumanTurn()) humanPass(); break;
+      case 'n': case 'N': $('numbersBtn').click(); break;
+      case 'a': case 'A': $('analysisBtn').click(); break;
+      case 'o': case 'O': $('ownershipBtn').click(); break;
+      case 's': case 'S': $('scoreBtn').click(); break;
+      case 'm': case 'M':
+        state.soundOn = !state.soundOn;
+        saveSettings();
+        showToast(state.soundOn ? t('soundOn') : t('soundOff'));
+        break;
+      case 'f': case 'F': $('flipBtn').click(); break;
+      case '[': navBlunder(-1); break;
+      case ']': navBlunder(1); break;
+      case 'Escape':
+        if (state.pendingMove) { state.pendingMove = null; renderBoard(); renderSide(); }
+        else if (state.previewNode) { exitPreview(); renderBoard(); }
+        break;
+    }
+  });
+
+  /* ================= 缓存自净 =================
+   * 旧版 SW 是"缓存优先"，用户的浏览器可能长期停在旧代码上（改了文件也不生效，
+   * 甚至服务没开时还从缓存打开页面 → AI 永远连不上）。这里给三道保险：
+   *   1) 版本号变了 → 清空 CacheStorage 并重载一次（每会话只重载一次，防循环）
+   *   2) SW 更新完成 → 立刻接管并重载一次
+   *   3) 「关于」里的「清除缓存并重载」手动逃生舱；URL 加 ?nosw 可彻底注销 SW */
+  function purgeCaches() {
+    if (typeof caches === 'undefined' || !caches || !caches.keys) return Promise.resolve();
+    return caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))).catch(() => { });
+  }
+  function reloadGuardOk() {
+    let last = 0;
+    try { last = Number(sessionStorage.getItem('got.reload') || 0); } catch (e) { }
+    if (Date.now() - last < 5000) return false;     // 会话内 5s 内不重复重载
+    try { sessionStorage.setItem('got.reload', String(Date.now())); } catch (e) { }
+    return true;
+  }
+  /* 版本升级 → 重载一次让新代码接管。
+   * 注意：**这里不清 CacheStorage**。清空 + 重载是一组危险动作——万一重载时
+   * 本地服务已关，SW 就没有任何东西可兜底，用户只会看到浏览器错误页。
+   * 缓存自净交给 SW 自己（activate 时按版本名删除旧缓存）；只有用户手动点
+   * 「清除缓存并重载」才会真清。 */
+  function reloadFresh(msg) {
+    if (!reloadGuardOk()) return;
+    showToast(msg || t('newVersion'));
+    const u = new URL(location.href);
+    u.searchParams.set('_t', String(Date.now()));   // 时间戳绕过残留缓存
+    location.replace(u.toString());
+  }
+  function checkVersionCache() {
+    let seen = null;
+    try { seen = localStorage.getItem('got.ver'); } catch (e) { }
+    if (!APP_VER) return false;                     // 取不到版本：不做任何判断
+    try { localStorage.setItem('got.ver', APP_VER); } catch (e) { }
+    if (!seen || seen === APP_VER) return false;
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      reloadFresh(t('newVersion'));
+      return true;
+    }
+    return false;
+  }
+  /* 每次打开都是新一局：把上一会话残留的对局态与所有派生缓存清空 */
+  function hardResetSession() {
+    state.opponent = gtp.info ? 'gtp' : 'builtin';
+    state.humanColor = BLACK;
+    state.mode = 'play';
+    state.workspace = 'play';
+    state.previewNode = null;
+    state.pendingMove = null;
+    state.deadStones.clear();
+    state.reviewRunning = false;
+    state.reviewStop = false;
+    state.autoplay = false;
+    if (state.autoplayTimer) { clearInterval(state.autoplayTimer); state.autoplayTimer = 0; }
+    state.scoreOwnership = null;
+    analysisCache.clear();
+    previewCache.clear();
+    gtpDownNotified = false;
+    setThinking(BLACK, false);
+  }
+
+  /* 桥接心跳：连上之后每 20s 复核。KataGo/本地服务被关掉时立刻降级提示，
+   * 恢复后自动切回，并在"引擎该走却卡住"时补一手——不再等到下次轮到引擎才发现。 */
+  let heartbeatTimer = 0;
+  function maybeResumeEngineTurn() {
+    if (!game() || state.mode !== 'play' || game().result) return;
+    if (state.workspace === 'review' || effOpponent() === 'human') return;
+    if (isHumanTurn() || engineThinking) return;
+    requestEngineMove();
+  }
+  function startBridgeHeartbeat() {
+    if (heartbeatTimer || location.protocol.indexOf('http') !== 0) return;
+    heartbeatTimer = setInterval(async () => {
+      const res = await gtp.health(4000);
+      if (res.ok) {
+        if (!gtp.info) {
+          gtp.info = res.engine;
+          gtpDownNotified = false;
+          updateEnginePill();
+          showToast(t('gtpRestored'));
+          applyDefaultOpponent();
+          if ($('newGameDialog').open) updateNgEngineHint();
+          maybeResumeEngineTurn();
+        }
+        return;
+      }
+      if (gtp.info) {
+        gtp.info = null;
+        updateEnginePill();
+        if ($('newGameDialog').open) updateNgEngineHint();
+        if (effOpponent() !== state.opponent) noteGtpFallback();
+      }
+    }, 20000);
+  }
+
+  /* ================= boot ================= */
+  function boot() {
+    /* 每次打开都是全新对局，直接进入空棋盘：
+     * - 棋局内容不落 localStorage（用户要求），旧版的 got.sgf 自动存盘已移除；
+     *   这里顺手清掉老版本残留的存盘数据。
+     * - 设置（got.settings / got.lang）照常持久化。 */
+    try { localStorage.removeItem('got.sgf'); } catch (e) { }
+    if (checkVersionCache()) return;    // 版本升级：清缓存后重载，本轮不再初始化
+    /* 逃生舱：?nosw 注销全部 Service Worker 并清缓存（SW 行为异常时用一次即可） */
+    try {
+      if (new URLSearchParams(location.search).has('nosw') && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          Promise.all(regs.map((r) => r.unregister())).then(() => purgeCaches());
+        }).catch(() => { });
+      }
+    } catch (e) { /* ignore */ }
+    hardResetSession();
+    state.game = new GE.Game({ size: 19, rules: 'chinese' });
+    applyI18n();
+    $('analysisBtn').setAttribute('aria-pressed', String(state.analysisOn));
+    /* 分析开关持久化恢复时同步点亮自动推演（与"开分析即开推演"行为一致） */
+    if (state.analysisOn) {
+      state.autoPreview = true;
+      $('autoPreviewBtn').setAttribute('aria-pressed', 'true');
+    }
+    $('confirmBtn').setAttribute('aria-pressed', String(state.confirmMove));
+    $('coordsBtn').setAttribute('aria-pressed', String(state.showCoords));
+    $('flipBtn').setAttribute('aria-pressed', String(state.flip));
+    updateAutoplayBtn();
+    console.log('%cGoT %c' + APP_VER, 'font-weight:bold', 'color:#d9ad60;font-weight:bold');
+    const av = $('aboutVersion');
+    if (av) av.textContent = 'v' + (APP_VER || '—');
+    renderer.resizeTo(stage);
+    renderAll();
+    updateEnginePill();
+  /* 引擎桥接探测：立即尝试一次；若桥已启动但引擎未就绪（如 KataGo 首次调优）
+   * 则每 4 秒重试，最多约 2 分钟。file:// 下桥不可达时不空转。 */
+  async function tryConnectEngine() {
+    const res = await gtp.health(4000);
+    if (res.ok) {
+      gtp.info = res.engine;
+      updateEnginePill();
+      /* 桥接恢复：清掉"已降级"提示标记，并在引擎该走却卡住时补一手 */
+      gtpDownNotified = false;
+      maybeResumeEngineTurn();
+      /* KataGo 在线即默认对手（最强 AI）：不管是不是首次使用，只要用户没手动
+       * 选过对手、也还没落子就切过去。以前判 !savedSettings，导致第二次起
+       * 永远停在内置 AI。 */
+      applyDefaultOpponent();
+      /* 桥接连上只刷新引擎提示，不重跑 syncNewGameDialog——
+       * 用户可能正在对话框里改棋盘/棋力/执子，此刻重置回默认很恼人 */
+      if ($('newGameDialog').open) updateNgEngineHint();
+      return true;
+    }
+    return res;
+  }
+  (async function pollEngine() {
+    const first = await tryConnectEngine();
+    if (first === true) { startBridgeHeartbeat(); return; }
+    const UNREACHABLE = /Failed to fetch|NetworkError|Load failed|fetch failed/i;
+    const reachable = !(first && first.error && UNREACHABLE.test(String(first.error)));
+    if (!reachable && location.protocol.indexOf('http') !== 0) return;
+    /* http 下连不上 = 本地服务没开（或页面只是 SW 缓存里的旧副本）。
+     * 明确说一次，免得用户面对"AI 一动不动"而不知所措。 */
+    if (!reachable && location.protocol.indexOf('http') === 0) showToast(t('serverDown'));
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 4000));
+      if ((await tryConnectEngine()) === true) { startBridgeHeartbeat(); return; }
+      if (location.protocol.indexOf('http') !== 0) return; // http 下桥在线才持续重试
+    }
+    startBridgeHeartbeat();   // 两分钟内没起来也保持心跳，之后手动开服务可自动接管
+  })();
+  /* SW：注册 + 更新即接管（每会话最多重载一次）。
+   * 不这么做的话，新版本 SW 会一直停在 waiting，用户关页面再开仍是旧代码。 */
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator) || location.protocol.indexOf('http') !== 0) return;
+    const hadController = !!navigator.serviceWorker.controller;   // 首次访问不该触发"更新重载"
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      if (!reg) return;
+      if (hadController && reg.waiting) { reloadFresh(t('newVersion')); return; }
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        if (!w) return;
+        w.addEventListener('statechange', () => {
+          if (w.state === 'installed' && hadController && navigator.serviceWorker.controller) reloadFresh(t('newVersion'));
+        });
+      });
+    }).catch(() => { });
+  }
+  registerServiceWorker();
+    /* 打开即直接进入空棋盘（不弹新对局对话框）：19 路 · 中国规则 · 你执黑 ·
+     * 对手为 AI（KataGo 在线自动用 KataGo，否则内置）。想自选规则/让子/执白，
+     * 点「新对局」即可。 */
+    syncNewGameDialog();
+    updateNgEngineHint();
+    requestAnalysis(game().current);
+  }
+  boot();
+})();

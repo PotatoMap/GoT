@@ -1,0 +1,18 @@
+{
+  "name": "GoT 围棋 — Professional Go Workbench",
+  "short_name": "GoT",
+  "description": "专业围棋对弈、复盘与 AI 分析工作台：内置 MCTS 引擎与 GTP 外部引擎支持",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#17181b",
+  "theme_color": "#17191d",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
