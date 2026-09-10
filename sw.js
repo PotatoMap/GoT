@@ -13,11 +13,12 @@ const VERSION_RE = /GOT_VERSION\s*=\s*['"]([^'"]+)['"]/;
 let CACHE = 'got-default';
 const ASSETS = [
   './', './index.html', './styles.css',
-  './js/version.js', './js/goengine.js', './js/ai-worker.js', './js/gtp.js', './js/board.js', './js/app.js',
-  './favicon.svg', './manifest.webmanifest'
+  './js/growth.js',
+  './js/version.js', './js/goengine.js', './js/ai-worker.js', './js/gtp.js', './js/board.js', './js/strength.js', './js/clock.js', './problems/problems.js', './js/study-games.js', './records/famous-games.js', './js/study.js', './js/learning.js', './js/records.js', './js/home.js', './js/app.js',
+  './brand.svg', './favicon.svg', './manifest.webmanifest'
 ];
 /* 引擎与自身脚本：永不缓存，永不代理 */
-const NEVER_CACHE = ['/health', '/gtp', '/analyze', '/sw.js'];
+const NEVER_CACHE = ['/health', '/gtp', '/analyze', '/analysis', '/sw.js'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {

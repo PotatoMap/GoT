@@ -24,6 +24,7 @@
         candColorMode: 'winrate', // winrate 按胜率着色 | rank 按列表排名着色
         ownership: null,        // Float array -1..1 (black-positive)
         territory: null,        // Int8Array 0/1/2
+        dame: null,             // Uint8Array 1=公气/未定空点（点目时用第三种颜色标出）
         dead: null,             // Set of indexes
         preview: null,          // [{x,y,color}]
         hover: null,            // {x,y,color,legal}
@@ -33,7 +34,8 @@
         showNumbers: false,
         showOwnership: false,
         toMove: BLACK,
-        bestMove: -1
+        bestMove: -1,
+        theme: 'obsidian'
       };
       this._grain = null;
       this._bg = null;        // 木纹+网格+坐标 离屏缓存
@@ -43,10 +45,22 @@
       this.px = 0;
     }
     set(opts) {
+      const oldTheme = this.opts.theme;
       Object.assign(this.opts, opts);
+      if (opts.theme !== undefined && opts.theme !== oldTheme) {
+        this._grain = null;
+        this._bg = null;
+        this._bgKey = '';
+      }
       if (opts.size !== undefined && opts.size !== this.size) {
         this.size = opts.size;
         this.stones = new Int8Array(this.size * this.size);
+        // The sprite radius is derived from the cell size. A 9x9 board can
+        // keep the same canvas pixels as a 19x19 board, so resizeTo() is not
+        // guaranteed to run and clear the cache for us. Rebuild immediately
+        // when the logical board size changes or the stones stay visibly too
+        // small until the next layout pass.
+        this._sprites = null;
       }
       if (opts.stones) this.stones = opts.stones;
     }
@@ -104,13 +118,14 @@
     render() {
       const ctx = this.ctx, px = this.px;
       if (!px) return;
-      const key = px + '|' + this.size + '|' + (this.opts.showCoords ? 1 : 0) + '|' + (this.opts.flip ? 1 : 0);
+      const key = px + '|' + this.size + '|' + (this.opts.showCoords ? 1 : 0) + '|' + (this.opts.flip ? 1 : 0) + '|' + (this.opts.theme || 'obsidian');
       // 仅背景依赖 flip/showCoords；棋子精灵只依赖 px，不随翻转向失效重建
       if (this._bgKey !== key) this._bg = null;
       if (!this._bg) { this._buildBg(); this._bgKey = key; }
       ctx.clearRect(0, 0, px, px);
       ctx.drawImage(this._bg, 0, 0);
       if (this.opts.territory) this._paintTerritory(ctx);
+      if (this.opts.dame) this._paintDame(ctx);
       this._paintStones(ctx);
       // 形势覆盖层画在棋子之上：整块地域连成同色区域，死子一目了然
       if (this.opts.showOwnership && this.opts.ownership) this._paintOwnership(ctx);
@@ -132,10 +147,11 @@
       this._bg = c;
     }
     _paintWood(ctx, px) {
+      const p = this._palette();
       const g = ctx.createLinearGradient(0, 0, px, px);
-      g.addColorStop(0, '#dfc38f');
-      g.addColorStop(0.5, '#d7b77d');
-      g.addColorStop(1, '#ceb080');
+      g.addColorStop(0, p.wood[0]);
+      g.addColorStop(0.5, p.wood[1]);
+      g.addColorStop(1, p.wood[2]);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, px, px);
       // cached grain
@@ -151,7 +167,7 @@
           gctx.beginPath();
           gctx.moveTo(0, y);
           for (let x = 0; x <= px; x += 24) gctx.lineTo(x, y + Math.sin(x / 130 + i) * amp);
-          gctx.strokeStyle = 'rgba(122, 82, 34, ' + (0.02 + rnd() * 0.025) + ')';
+          gctx.strokeStyle = p.grain.replace('ALPHA', (0.02 + rnd() * 0.025).toFixed(3));
           gctx.lineWidth = 0.8 + rnd() * 1.6;
           gctx.stroke();
         }
@@ -159,15 +175,16 @@
       }
       ctx.drawImage(this._grain, 0, 0);
       // border
-      ctx.strokeStyle = 'rgba(90, 58, 20, 0.55)';
+      ctx.strokeStyle = p.border;
       ctx.lineWidth = Math.max(1, 2 * this.dpr);
       ctx.strokeRect(1, 1, px - 2, px - 2);
     }
     _paintGrid(ctx) {
+      const p = this._palette();
       const n = this.size, dpr = this.dpr, flip = this.opts.flip;
       // 网格/星位/坐标用视觉坐标（对称，翻转后形状不变）；标签内容按逻辑坐标翻转
       const x0 = this._vx(0), x1 = this._vx(n - 1);
-      ctx.strokeStyle = 'rgba(94, 62, 24, 0.85)';
+      ctx.strokeStyle = p.grid;
       ctx.lineWidth = Math.max(1, 0.9 * dpr);
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
@@ -181,7 +198,7 @@
       ctx.strokeRect(x0, x0, x1 - x0, x1 - x0);
       // star points
       const stars = this._stars(n);
-      ctx.fillStyle = 'rgba(70, 45, 16, 0.95)';
+      ctx.fillStyle = p.star;
       for (const [sx, sy] of stars) {
         ctx.beginPath();
         ctx.arc(this._vx(sx), this._vy(sy), Math.max(2, 2.6 * dpr), 0, 7);
@@ -190,7 +207,7 @@
       // coordinates
       if (this.opts.showCoords) {
         const letters = 'ABCDEFGHJKLMNOPQRST';
-        ctx.fillStyle = 'rgba(74, 48, 17, 0.9)';
+        ctx.fillStyle = p.coord;
         ctx.font = `${Math.max(9, this.cell * 0.34 * dpr)}px Inter, system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -213,6 +230,26 @@
       const out = [[e, e], [n - 1 - e, e], [e, n - 1 - e], [n - 1 - e, n - 1 - e]];
       if (Number.isInteger(m)) out.push([m, m]);
       return out;
+    }
+    _palette() {
+      const palettes = {
+        obsidian: {
+          wood: ['#dfc38f', '#d7b77d', '#ceb080'], grain: 'rgba(122, 82, 34, ALPHA)',
+          border: 'rgba(90, 58, 20, 0.55)', grid: 'rgba(94, 62, 24, 0.85)',
+          star: 'rgba(70, 45, 16, 0.95)', coord: 'rgba(74, 48, 17, 0.9)'
+        },
+        paper: {
+          wood: ['#dfc38f', '#d7b77d', '#ceb080'], grain: 'rgba(122, 82, 34, ALPHA)',
+          border: 'rgba(90, 58, 20, 0.55)', grid: 'rgba(94, 62, 24, 0.85)',
+          star: 'rgba(70, 45, 16, 0.95)', coord: 'rgba(74, 48, 17, 0.9)'
+        },
+        forest: {
+          wood: ['#c7c39e', '#b8b58f', '#aaa77f'], grain: 'rgba(70, 79, 50, ALPHA)',
+          border: 'rgba(60, 69, 45, 0.6)', grid: 'rgba(60, 67, 43, 0.82)',
+          star: 'rgba(45, 55, 34, 0.95)', coord: 'rgba(49, 59, 38, 0.9)'
+        }
+      };
+      return palettes[this.opts.theme] || palettes.obsidian;
     }
     _stoneRadius() { return this.cell * 0.47 * this.dpr; }
     /* 棋子本体（画到指定 ctx），供精灵缓存使用 */
@@ -323,6 +360,22 @@
         ctx.strokeStyle = 'rgba(60,40,15,0.6)';
         ctx.lineWidth = Math.max(0.6, this.dpr * 0.7);
         ctx.strokeRect(cx - s / 2, cy - s / 2, s, s);
+      }
+    }
+    /* 公气/未定空点：金色小圆点，与黑白领地方块区分开——不标出来用户只会觉得"数字不对" */
+    _paintDame(ctx) {
+      const d = this.opts.dame;
+      const r = Math.max(1.5, this.cell * 0.08 * this.dpr);
+      ctx.fillStyle = 'rgba(214,158,60,0.62)';
+      ctx.strokeStyle = 'rgba(110,76,16,0.85)';
+      ctx.lineWidth = Math.max(0.6, this.dpr * 0.7);
+      for (let i = 0; i < d.length; i++) {
+        if (!d[i]) continue;
+        const cx = this.cx(i % this.size), cy = this.cy((i / this.size) | 0);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
       }
     }
     _paintOwnership(ctx) {

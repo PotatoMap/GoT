@@ -483,6 +483,9 @@ def do_analyze(spec):
     if ownership is not None and to_move == "W":
         ownership = [-v for v in ownership]
     best_move = {"pass": True} if best.get("pass_") else {"x": best["x"], "y": best["y"]}
+    # 顶层 scoreLead 归一化为黑方视角（含贴目），供点目「AI 参考」直接消费（与 server.js 一致）
+    best_score = best.get("scoreLead")
+    score_lead_black = None if best_score is None else (best_score if to_move == "B" else -best_score)
     return {
         "ok": True,
         "engine": ENGINE_NAME,
@@ -501,6 +504,7 @@ def do_analyze(spec):
             } for c in cands
         ],
         "ownership": ownership,  # black-perspective floats or None
+        "scoreLead": score_lead_black,  # black-perspective points incl. komi, or None
         "toMove": 1 if to_move == "B" else 2,
         "size": size,
         "komi": komi,

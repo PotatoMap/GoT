@@ -1,17 +1,8 @@
 {
   "name": "got_gui",
-  "version": "1.0.0",
-  "description": "**GoT** 是一个专业的围棋（Weiqi / Baduk）对弈与 AI 分析工作台，参考 Sabaki（三栏布局、棋谱树、GTP 引擎集成）与 Lizzie / KaTrain（胜率曲线、候选着标注、形势热力图）等知名围棋 GUI 设计。",
+  "version": "2.0.0",
+  "description": "GoT — 专业围棋对弈、AI 分析与复盘训练工作台（内置 MCTS，可选 KataGo）",
   "private": true,
-  "scripts": {
-    "test": "node tests/check_consistency.js && node tests/test_goengine.js && node tests/test_ai.js && node tests/test_app.js && node tests/test_server.js && node tests/test_gtp.js",
-    "build": "node tools/build.js"
-  },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "jsdom": "^30.0.1"
-  }
+  "type": "commonjs"
 }

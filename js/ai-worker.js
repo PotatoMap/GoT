@@ -518,13 +518,38 @@
     }
     q() { return this.visits ? this.wins / this.visits : 0.45; }
   }
-  function expandNode(board, node, colorToMove, phase, lastMove) {
+  const MAX_CHILDREN = 72; // 渐进加宽：只保留先验最高的分支 + pass，降低选点/内存开销
+  function expandNode(board, node, colorToMove, phase, lastMove, bookBoost) {
     const { moves, priors } = genCandidates(board, colorToMove, phase, lastMove);
-    node.children = [];
-    for (let k = 0; k < moves.length; k++) {
-      node.children.push(new MctsNode(moves[k], colorToMove, priors[k], node));
+    /* 开局库命中：根节点只保留库候选（+ pass），让有限访问量集中在开局要点上；
+     * 库候选在 genCandidates 里必为合法着点，真眼/自杀点不会进库。 */
+    if (bookBoost && bookBoost.size) {
+      let sum = 0;
+      for (const w of bookBoost.values()) sum += w;
+      node.children = [];
+      for (let k = 0; k < moves.length; k++) {
+        const w = bookBoost.get(moves[k]);
+        if (w) node.children.push(new MctsNode(moves[k], colorToMove, w / sum, node));
+      }
+      if (node.children.length) {
+        node.children.push(new MctsNode(-1, colorToMove, 0.004, node)); // pass
+        return;
+      }
     }
-    node.children.push(new MctsNode(-1, colorToMove, 0.004, node)); // pass
+    const children = [];
+    if (moves.length > MAX_CHILDREN) {
+      const order = moves.map((_, i) => i).sort((a, b) => priors[b] - priors[a]);
+      for (let j = 0; j < MAX_CHILDREN; j++) {
+        const k = order[j];
+        children.push(new MctsNode(moves[k], colorToMove, priors[k], node));
+      }
+    } else {
+      for (let k = 0; k < moves.length; k++) {
+        children.push(new MctsNode(moves[k], colorToMove, priors[k], node));
+      }
+    }
+    children.push(new MctsNode(-1, colorToMove, 0.004, node)); // pass
+    node.children = children;
   }
   function selectChild(node, cPuct) {
     let best = null, bestScore = -Infinity;
@@ -552,8 +577,101 @@
     return m < 0 ? { pass: true, x: -1, y: -1 } : { pass: false, x: m % size, y: (m / size) | 0 };
   }
 
+  /* ------------------------------------------------------------------ *
+   *  Opening book (19x19)                                               *
+   *  轻量布局库：只收录被广泛认可的角部开局与简单挂角，不冒充定式库。   *
+   *  每条线是 [color,x,y] 序列（1=黑 2=白，x 左→右，y 上→下）；加载时   *
+   *  对 8 种棋盘对称做规范化，一条线即覆盖旋转/镜像后的全部等价局面。   *
+   *  命中后的作用：把对应根候选的先验加权，让有限访问量优先落在开局要点。*
+   * ------------------------------------------------------------------ */
+  const BOOK_SIZE = 19;
+  const MAX_TREE_VISITS = 250000; // 跨手复用树的访问量上限，防止长对局内存膨胀
+  const _TR = [
+    (x, y, n) => [x, y],
+    (x, y, n) => [n - 1 - y, x],
+    (x, y, n) => [n - 1 - x, n - 1 - y],
+    (x, y, n) => [y, n - 1 - x],
+    (x, y, n) => [n - 1 - x, y],
+    (x, y, n) => [x, n - 1 - y],
+    (x, y, n) => [y, x],
+    (x, y, n) => [n - 1 - y, n - 1 - x]
+  ];
+  const _TR_INV = [0, 3, 2, 1, 4, 5, 6, 7]; // 每个对称变换的逆（对合/旋转成对）
+  function canonMoves(moves) {
+    const n = BOOK_SIZE;
+    let bestKey = null, bestK = 0;
+    for (let k = 0; k < 8; k++) {
+      const f = _TR[k];
+      let key = '';
+      for (const m of moves) {
+        if (m.pass) { key += m.color + 'p.'; continue; }
+        const t = f(m.x, m.y, n);
+        key += m.color + (t[1] * n + t[0]).toString(36) + '.';
+      }
+      if (bestKey === null || key < bestKey) { bestKey = key; bestK = k; }
+    }
+    return { key: bestKey, inv: _TR_INV[bestK] };
+  }
+  const BOOK_LINES = [
+    // 四角星（对角 / 同侧配对）
+    [[1, 15, 3], [2, 3, 15], [1, 3, 3], [2, 15, 15]],
+    [[1, 15, 3], [2, 3, 3], [1, 3, 15], [2, 15, 15]],
+    [[1, 15, 3], [2, 15, 15], [1, 3, 3], [2, 3, 15]],
+    [[1, 3, 3], [2, 15, 15], [1, 15, 3], [2, 3, 15]],
+    // 星位 + 挂角（R14 / R6 等小飞挂）
+    [[1, 15, 3], [2, 16, 5], [1, 3, 15], [2, 3, 3]],
+    [[1, 15, 3], [2, 16, 5], [1, 3, 3], [2, 15, 15]],
+    [[1, 3, 3], [2, 16, 5], [1, 15, 3], [2, 15, 15]],
+    // 3-4（小目）开局
+    [[1, 16, 3], [2, 3, 15], [1, 3, 3], [2, 15, 15]],
+    [[1, 2, 3], [2, 16, 5], [1, 15, 15], [2, 3, 15]],
+    // 3-3（三三）开局
+    [[1, 2, 2], [2, 15, 3], [1, 15, 15], [2, 3, 15]],
+    [[1, 16, 16], [2, 3, 3], [1, 3, 15], [2, 15, 3]],
+    // 五手延伸：角部占完后挂对方星位
+    [[1, 15, 3], [2, 3, 15], [1, 3, 3], [2, 15, 15], [1, 16, 13]],
+    [[1, 15, 3], [2, 3, 3], [1, 3, 15], [2, 15, 15], [1, 2, 13]]
+  ];
+  const _BOOK = new Map();
+  for (const line of BOOK_LINES) {
+    // p=0 收录空盘首手，之后每个前缀收录其下一手
+    for (let p = 0; p < line.length; p++) {
+      const prefix = [];
+      for (let q = 0; q < p; q++) prefix.push({ color: line[q][0], x: line[q][1], y: line[q][2] });
+      const c = canonMoves(prefix);
+      const k = _TR_INV[c.inv]; // current → canonical
+      const t = _TR[k](line[p][1], line[p][2], BOOK_SIZE);
+      const move = t[1] * BOOK_SIZE + t[0];
+      let arr = _BOOK.get(c.key);
+      if (!arr) { arr = []; _BOOK.set(c.key, arr); }
+      arr.push({ move, w: 1 });
+    }
+  }
+  /* 返回 Map(落点索引 → 权重)；不匹配返回 null。仅 19 路整盘开局调用。 */
+  function bookMoves(moves) {
+    moves = moves || [];
+    if (moves.length > 12) return null;
+    for (const m of moves) if (!m.color) return null;
+    const c = canonMoves(moves);
+    const arr = _BOOK.get(c.key);
+    if (!arr) return null;
+    const out = new Map();
+    for (const e of arr) {
+      const t = _TR[c.inv](e.move % BOOK_SIZE, (e.move / BOOK_SIZE) | 0, BOOK_SIZE);
+      const idx = t[1] * BOOK_SIZE + t[0];
+      out.set(idx, (out.get(idx) || 0) + e.w);
+    }
+    return out;
+  }
+
   class GoAI {
-    constructor() { this.stopFlag = false; }
+    constructor() {
+      this.stopFlag = false;
+      this.root = null;       // 上一手搜索树，用于跨手复用（rollout reuse）
+      this.rootKeys = null;   // 上一手局面手顺（前缀匹配）
+      this.rootSize = 0;
+      this.rootSetup = null;
+    }
     stop() { this.stopFlag = true; }
     budgetFor(strength, forAnalysis) {
       const s = Math.max(1, Math.min(9, strength | 0));
@@ -593,9 +711,10 @@
       }
       let last = -1;
       const moves = posSpec.moves || [];
+      const moveKeys = [];
       for (const m of moves) {
-        if (m.pass) { last = -1; rootBoard.ko = -1; } // pass 清劫禁点（与规则引擎 goengine 语义一致）
-        else { rootBoard.play(m.y * size + m.x, m.color); last = m.y * size + m.x; }
+        if (m.pass) { last = -1; rootBoard.ko = -1; moveKeys.push('p'); } // pass 清劫禁点（与规则引擎 goengine 语义一致）
+        else { const idx = m.y * size + m.x; rootBoard.play(idx, m.color); last = idx; moveKeys.push(m.color + ':' + idx); }
       }
       let rootColor;
       if (posSpec.toMove) rootColor = posSpec.toMove;
@@ -604,8 +723,39 @@
       else rootColor = BLACK;
 
       const phase = moves.length / (size * 2);
-      const root = new MctsNode(-1, rootColor, 1, null);
-      expandNode(rootBoard, root, rootColor, phase, last);
+      const setupKey = JSON.stringify(posSpec.setup || null);
+      const bookBoost = (size === BOOK_SIZE && !posSpec.setup) ? bookMoves(moves) : null;
+      /* 跨手复用：新局面是上一手局面的延伸时，直接把上一棵搜索树切到对应子节点，
+       * 沿用已有的访问/胜率统计（蒙特卡洛树复用，显著提升实际对局的开局/中盘强度）。
+       * 命中开局库时优先用库（走全新根并限制候选），不参与复用。 */
+      let root = null;
+      if (!bookBoost && this.root && this.rootSize === size && this.rootSetup === setupKey &&
+          this.rootKeys && this.rootKeys.length <= moveKeys.length &&
+          this.root.visits < MAX_TREE_VISITS) {
+        const old = this.rootKeys;
+        let prefixOk = true;
+        for (let i = 0; i < old.length; i++) if (old[i] !== moveKeys[i]) { prefixOk = false; break; }
+        if (prefixOk) {
+          let cur = this.root;
+          for (let i = old.length; i < moveKeys.length; i++) {
+            const cm = moves[i].pass ? -1 : moves[i].y * size + moves[i].x;
+            let child = cur.children && cur.children.find ? cur.children.find(c => c.move === cm) : null;
+            if (!child) {
+              child = new MctsNode(cm, moves[i].color, 0.004, cur);
+              if (!cur.children) cur.children = [];
+              cur.children.push(child);
+            }
+            cur = child;
+          }
+          if (old.length !== moveKeys.length) cur.color = other(cur.color); // 新根 color = 当前行棋方
+          cur.parent = null;
+          if (cur.color === rootColor) root = cur; // 手顺/行棋方一致才复用
+        }
+      }
+      if (!root) {
+        root = new MctsNode(-1, rootColor, 1, null);
+        expandNode(rootBoard, root, rootColor, phase, last, bookBoost);
+      }
       const ownAcc = new Float32Array(size * size);
       let ownPlayouts = 0, sumScore = 0, visits = 0;
       const t0 = Date.now();
@@ -672,6 +822,8 @@
       result.done = true;
       result.strength = strength;
       result.toMove = rootColor;
+      // 保存本手搜索树，供下一手局面延伸时复用
+      this.root = root; this.rootKeys = moveKeys; this.rootSize = size; this.rootSetup = setupKey;
       return result;
     }
   }
@@ -749,7 +901,7 @@
       }
     };
   }
-  const exportsObj = { GoAI, FastBoard, playout, genCandidates, MctsNode, areaOwnership };
+  const exportsObj = { GoAI, FastBoard, playout, genCandidates, MctsNode, areaOwnership, bookMoves, BOOK_LINES };
   if (typeof module === 'object' && module.exports) module.exports = exportsObj;
   scope.GoTAI = exportsObj;
 })(typeof self !== 'undefined' ? self : this);

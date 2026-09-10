@@ -27,7 +27,12 @@ function argOf(name, def) {
   const i = args.indexOf(name);
   return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : def;
 }
-const PORT = parseInt(argOf('--port', '4173'), 10);
+const parsedPort = parseInt(argOf('--port', '4173'), 10);
+/* The launcher normally reserves 4173 first, but a second GoT instance can
+ * still win the race before Node binds. Keep the server resilient when it is
+ * started directly or when another process takes the port between checks. */
+const PORT = Number.isInteger(parsedPort) && parsedPort >= 0 && parsedPort <= 65535 ? parsedPort : 4173;
+const PORT_SCAN_LIMIT = 40;
 const USE_ENGINE = !args.includes('--no-engine');
 
 /* ------------------------------------------------------------------ *
@@ -140,6 +145,8 @@ class GtpProcess {
 }
 
 let ENGINE = null;
+const NativeAnalysis = require('./analysis-engine');
+let ANALYSIS = null;
 let ENGINE_NAME = 'unknown';
 let ENGINE_CMDLINE = '';
 let ENGINE_COMMANDS = null;   // 引擎支持的命令集（探测后缓存）
@@ -157,8 +164,8 @@ function withEngineMutex(fn) {
 /* ------------------------------------------------------------------ *
  *  engine detection                                                    *
  * ------------------------------------------------------------------ */
-function detectEngineCmd() {
-  const engDir = path.join(ROOT, 'engines');
+function detectEngineCmd(rootDir) {
+  const engDir = path.join(rootDir || ROOT, 'engines');
   const katagoDir = path.join(engDir, 'katago');
   const exe = ['katago.exe', 'katago']
     .map(n => path.join(katagoDir, n)).find(p => fs.existsSync(p));
@@ -174,8 +181,9 @@ function detectEngineCmd() {
     }
     console.error('[got] katago.exe found but no *.bin.gz model in engines/katago');
   }
-  const mock = path.join(engDir, 'mock_gtp.py');
-  if (fs.existsSync(mock)) return `"python" "${mock}"`;
+  /* mock_gtp.py 只是单元测试桩，**绝不自动回退**——否则"有引擎无模型"的轻量包
+   * 会静默用假 AI，而用户以为是内置 MCTS。测试请显式传
+   * --engine-cmd "python engines/mock_gtp.py"。无引擎 → 前端用内置 AI。 */
   return null;
 }
 
@@ -223,6 +231,16 @@ async function replayPosition(spec) {
   const size = spec.size || 19;
   const komi = spec.komi !== undefined ? spec.komi : 7.5;
   const setupKey = JSON.stringify(spec.setup || null);
+  const rules = spec.rules || 'chinese';
+  if (!lastPos || lastPos.rules !== rules) {
+    await probeEngineLocked();
+    if (ENGINE_COMMANDS && ENGINE_COMMANDS.has('kata-set-rules')) {
+      if (!['chinese', 'japanese', 'korean'].includes(rules)) throw new Error('Unsupported rules');
+      const r = await ENGINE.command('kata-set-rules ' + rules, 10000);
+      if (!r.ok) throw new Error('Cannot set analysis rules');
+    }
+    lastPos = null;
+  }
   // 规范化手顺为 "B x,y" / "W pass" 形式，便于前缀比较
   const moves = (spec.moves || []).map(m => {
     const mv = normalizeMove(m, size);
@@ -290,7 +308,7 @@ async function replayPosition(spec) {
     lastPos = null;
     throw e;
   }
-  lastPos = { size, setupKey, moveKeys };
+  lastPos = { size, setupKey, moveKeys, rules };
 }
 function parseAnalyzeLine(line, size) {
   // One update line contains MANY "info move ..." blocks concatenated.
@@ -327,7 +345,7 @@ function parseAnalyzeSegment(line, size) {
     if (wr <= 1.0) wr *= 100;
     out.wr = Math.max(0, Math.min(100, wr));
   }
-  const sv = num('scoreMean', num('scoreSelfplay', num('score', null)));
+  const sv = num('scoreLead', num('scoreMean', num('scoreSelfplay', num('score', null))));
   if (sv !== null) out.score = sv;
   out.prior = num('prior', 0);
   out.pvMoves = [];
@@ -422,6 +440,10 @@ async function doAnalyze(spec) {
   // 统一归一化为黑方视角返回，前端所有形势/点目逻辑均按黑正处理
   let ownershipOut = ownership;
   if (ownershipOut && toMove === 'W') ownershipOut = ownershipOut.map(v => -v);
+  // scoreMean 同为行棋方视角（含贴目），顶层 scoreLead 归一化为黑正，
+  // 供点目「AI 参考分」直接消费（此前只在候选项里，前端取不到 → 一直显示"未参与"）
+  const scoreLeadBlack = best && best.score !== undefined
+    ? (toMove === 'B' ? best.score : -best.score) : null;
   return {
     ok: true,
     engine: ENGINE_NAME,
@@ -434,6 +456,7 @@ async function doAnalyze(spec) {
       prior: c.prior, pv: c.pvMoves
     })),
     ownership: ownershipOut,                            // black perspective or null
+    scoreLead: scoreLeadBlack,                          // black perspective, incl. komi, or null
     toMove: toMove === 'B' ? 1 : 2,
     size
   };
@@ -577,9 +600,70 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+/* Bind the requested loopback port and advance through a small local range on
+ * EADDRINUSE. This is deliberately kept in the server as a final race-safe
+ * fallback; the BAT launchers perform the same quick check to show the chosen
+ * port before Node starts. */
+function listenWithFallback(startPort) {
+  return new Promise((resolve, reject) => {
+    const limit = startPort === 0 ? 1 : PORT_SCAN_LIMIT;
+    let port = startPort;
+    let tried = 0;
+    const attempt = () => {
+      tried += 1;
+      const onListening = () => {
+        server.removeListener('error', onError);
+        server.removeListener('listening', onListening);
+        resolve(server.address().port);
+      };
+      const onError = (err) => {
+        server.removeListener('listening', onListening);
+        server.removeListener('error', onError);
+        if (err && err.code === 'EADDRINUSE' && port > 0 && port < 65535 && tried < limit) {
+          const blocked = port;
+          port += 1;
+          console.warn(`[got] port ${blocked} is busy; trying ${port}`);
+          /* After a failed listen Node reports ERR_SERVER_NOT_RUNNING from
+           * close(); the callback is still the safe point for the next bind. */
+          server.close(() => setImmediate(attempt));
+          return;
+        }
+        reject(err);
+      };
+      server.once('error', onError);
+      server.once('listening', onListening);
+      server.listen(port, '127.0.0.1');
+    };
+    attempt();
+  });
+}
+
 async function handle(req, res) {
   const u = req.url || '/';
   if (req.method === 'OPTIONS') return sendJson(req, res, { ok: true });
+  if (ANALYSIS && u === '/health') return sendJson(req, res, {
+    ok: ANALYSIS.alive, service: 'got_server', engine: { name: 'KataGo', version: '',
+      nativeAnalysis: true, supportsAnalyze: true, supportsOwnership: true, kataAnalyze: true, model: ANALYSIS.model }
+  });
+  if (ANALYSIS && (u === '/analysis' || u === '/analyze') && req.method === 'POST') {
+    const body = await readBody(req);
+    const ctrl = new AbortController();
+    res.on('close', () => ctrl.abort());
+    const streaming = u === '/analysis';
+    if (streaming) res.writeHead(200, { ...corsHeaders(req), 'Content-Type': 'application/x-ndjson', 'Cache-Control': NO_STORE });
+    const send = obj => { if (!res.destroyed) res.write(JSON.stringify(obj) + '\n'); };
+    try {
+      const result = await ANALYSIS.analyze(body, { signal: ctrl.signal, onUpdate: streaming ? send : undefined });
+      if (streaming) { send(result); res.end(); }
+      else if (!res.destroyed) sendJson(req, res, result);
+    } catch (e) {
+      if (!res.destroyed) {
+        if (streaming) { send({ ok: false, error: e.message }); res.end(); }
+        else sendJson(req, res, { ok: false, error: e.message }, 500);
+      }
+    }
+    return;
+  }
   if (USE_ENGINE && ENGINE && u === '/health') {
     const info = await probeEngine();
     if (!info) return sendJson(req, res, { ok: false, error: 'engine not ready' }, 503);
@@ -615,8 +699,13 @@ async function main() {
   const engineArgIdx = args.indexOf('--engine-cmd');
   let cmd = engineArgIdx >= 0 ? args[engineArgIdx + 1] : null;
   if (USE_ENGINE) {
-    if (!cmd) cmd = detectEngineCmd();
-    if (cmd) {
+    const native = !cmd && NativeAnalysis.detect(ROOT);
+    if (native) {
+      ANALYSIS = new NativeAnalysis.AnalysisEngine(native.exe, native.args, native.model);
+      console.log('[got] KataGo JSON analysis:', native.model);
+    }
+    if (!cmd && !native) cmd = detectEngineCmd();
+    if (cmd && !native) {
       console.log('[got] engine:', cmd);
       ENGINE = new GtpProcess(cmd);
       ENGINE.child.on('exit', () => { invalidateEngineInfo(); lastPos = null; ENGINE_COMMANDS = null; });
@@ -629,26 +718,26 @@ async function main() {
         if (r.ok) break;
         await new Promise(res => setTimeout(res, 400));
       }
-    } else {
+    } else if (!native) {
       console.log('[got] no GTP engine found — serving built-in-AI-only mode');
     }
   }
-  server.listen(PORT, '127.0.0.1', () => {
-    console.log(`[got] GoT serving at http://127.0.0.1:${PORT}`);
-    console.log('[got] Ctrl+C to stop');
-    // 服务器就绪后再打开浏览器（--open），避免“页面先于服务启动”的竞态（Windows / Linux 都支持）
-    if (args.includes('--open')) {
-      try {
-        const { exec } = require('child_process');
-        if (process.platform === 'win32') exec(`start "" http://127.0.0.1:${PORT}`, { shell: 'cmd.exe' });
-        else exec(`xdg-open http://127.0.0.1:${PORT}`, () => { }); // 无桌面环境时静默失败
-      } catch (e) { console.error('[got] open browser failed:', e.message); }
-    }
-  });
+  const activePort = await listenWithFallback(PORT);
+  console.log(`[got] GoT serving at http://127.0.0.1:${activePort}`);
+  console.log('[got] Ctrl+C to stop');
+  // 服务器就绪后再打开浏览器（--open），避免“页面先于服务启动”的竞态（Windows / Linux 都支持）
+  if (args.includes('--open')) {
+    try {
+      const { exec } = require('child_process');
+      if (process.platform === 'win32') exec(`start "" http://127.0.0.1:${activePort}`, { shell: 'cmd.exe' });
+      else exec(`xdg-open http://127.0.0.1:${activePort}`, () => { }); // 无桌面环境时静默失败
+    } catch (e) { console.error('[got] open browser failed:', e.message); }
+  }
 }
 /* 退出时同步杀死引擎进程树——shell:true 下直接 kill 只能杀到 cmd.exe，
  * Windows 上要用 taskkill /T 连整棵进程树一起收掉，否则 KataGo 变孤儿进程继续烧 GPU */
 function killEngineTree() {
+  if (ANALYSIS) ANALYSIS.stop();
   if (!ENGINE) return;
   try {
     if (process.platform === 'win32' && ENGINE.child.pid) {
@@ -664,4 +753,8 @@ process.on('SIGTERM', shutdown);
 process.on('exit', killEngineTree);
 // 兜底：任何拒绝都不允许打崩整个桥接服务（未处理 rejection 默认退出进程）
 process.on('unhandledRejection', (e) => { console.error('[got] unhandled rejection:', e && e.stack || e); });
-main().catch(e => { console.error('[got] startup failed:', e && e.stack || e); process.exit(1); });
+if (require.main === module) {
+  main().catch(e => { console.error('[got] startup failed:', e && e.stack || e); process.exit(1); });
+}
+/* detectEngineCmd 供单元测试直接调用（require 本文件不会启动服务） */
+module.exports = { detectEngineCmd };

@@ -338,6 +338,14 @@
       if (this.date) p.DT = this.date;
       if (this.event) p.EV = this.event;
       p.KM = String(this.komi); p.RU = this.rules; p.SZ = String(this.size);
+      /* 对局计时：TM 主时间（秒）、OT 读秒（SGF 惯例 "NxSEC byo-yomi"）。
+       * 无计时则清掉旧属性，避免残留。 */
+      if (this.timeControl && this.timeControl.main > 0) {
+        p.TM = String(this.timeControl.main);
+        if (this.timeControl.periods > 0 && this.timeControl.byo > 0) {
+          p.OT = this.timeControl.periods + 'x' + this.timeControl.byo + ' byo-yomi';
+        } else { delete p.OT; }
+      } else { delete p.TM; delete p.OT; }
       return p;
     }
     /* Position after applying all moves/setup from root to node. */
@@ -356,9 +364,10 @@
           for (const i of (nd.setup.AB || [])) pos.setStone(i, BLACK);
           for (const i of (nd.setup.AW || [])) pos.setStone(i, WHITE);
           for (const i of (nd.setup.AE || [])) pos.setStone(i, EMPTY);
-          // handicap/setup stones on the root: White moves first (SGF convention)
+          // 根节点的摆子（让子/死活题初始局面）：先手方由 SGF 的 PL 决定（缺省按 SGF 约定白先）
           if (nd === this.root && ((nd.setup.AB && nd.setup.AB.length) || (nd.setup.AW && nd.setup.AW.length))) {
-            pos.turn = WHITE;
+            const pl = this.root.props.PL;
+            pos.turn = (pl === 'B') ? BLACK : (pl === 'W') ? WHITE : WHITE;
           }
         }
         if (nd.move) {
@@ -469,10 +478,13 @@
   /*
    * dead: Set of point indices whose entire group is considered dead.
    * rules.scoring: 'area' (Chinese) | 'territory' (Japanese/Korean)
-   * ownership: 可选，AI 形势数组（黑正，-1..1）。洪泛判为公气（dame）的空点，
-   *            若 AI 强烈归属一方（|v| > ownThreshold）则计入该方领地——
-   *            这样 AI 判定围住的区域（含未标死子的空域）也会被算上。
-   * Returns {black, white, komi, diff, territory:Int8Array(0/1/2), deadStones:[...], captures}
+   * ownership: 可选，AI 形势数组（黑正，-1..1）。
+   *   - 默认（ownershipFull=false）：洪泛判为公气（dame）的空点才交给 ownership，
+   *     若 AI 强烈归属一方（|v| > ownThreshold）则计入该方领地。
+   *   - ownershipFull=true：**AI 逐点判定全盘归属**——每个空点都按 ownership 阈值
+   *     直接归黑/白（|v| ≤ 阈值算公气），不再依赖 JS 洪泛。这就是"点目交给 AI"：
+   *     黑/白点数即 KataGo 形势结果；死子点强制归提子方（尊重手动标记）。
+   * Returns {black, white, komi, diff, territory:Int8Array(0/1/2), deadStones:[...], stonesB, stonesW, terrB, terrW, dame}
    */
   function scorePosition(pos, opts) {
     opts = opts || {};
@@ -481,49 +493,79 @@
     const mode = opts.scoring || 'area';
     const ownership = (opts.ownership && opts.ownership.length === pos.size * pos.size) ? opts.ownership : null;
     const ownT = opts.ownThreshold !== undefined ? opts.ownThreshold : 0.5;
+    const full = !!opts.ownershipFull && !!ownership;   // AI 全盘归属模式
     const size = pos.size, b = pos.board;
     const work = b.slice();
     const deadStones = [];
-    for (const i of dead) if (work[i] !== EMPTY) { deadStones.push(i); work[i] = EMPTY; }
+    const forced = new Int8Array(size * size);   // 死子点：提走后归对方
+    for (const i of dead) if (work[i] !== EMPTY) {
+      deadStones.push(i);
+      forced[i] = work[i] === BLACK ? WHITE : BLACK;
+      work[i] = EMPTY;
+    }
     const territory = new Int8Array(size * size); // 0 none/dame, 1 black, 2 white
-    const seen = new Uint8Array(size * size);
     let terrB = 0, terrW = 0;
-    const stack = [];
-    for (let i = 0; i < work.length; i++) {
-      if (work[i] !== EMPTY || seen[i]) continue;
-      let touchB = false, touchW = false;
-      const region = [];
-      seen[i] = 1; stack.length = 0; stack.push(i);
-      while (stack.length) {
-        const c = stack.pop(); region.push(c);
-        const s = size, x = c % s;
-        const nb = [];
-        if (x > 0) nb.push(c - 1);
-        if (x < s - 1) nb.push(c + 1);
-        if (c >= s) nb.push(c - s);
-        if (c < s * (s - 1)) nb.push(c + s);
-        for (let k = 0; k < nb.length; k++) {
-          const nn = nb[k];
-          if (work[nn] === BLACK) touchB = true;
-          else if (work[nn] === WHITE) touchW = true;
-          else if (!seen[nn]) { seen[nn] = 1; stack.push(nn); }
+    if (full) {
+      for (let i = 0; i < work.length; i++) {
+        if (work[i] !== EMPTY) continue;          // 活子点不算领地（棋子另计）
+        let owner = forced[i];
+        if (!owner) {
+          const v = ownership[i] || 0;
+          if (v > ownT) owner = BLACK;
+          else if (v < -ownT) owner = WHITE;
+        }
+        if (owner) { territory[i] = owner; if (owner === BLACK) terrB++; else terrW++; }
+      }
+    } else {
+      const seen = new Uint8Array(size * size);
+      const stack = [];
+      for (let i = 0; i < work.length; i++) {
+        if (work[i] !== EMPTY || seen[i]) continue;
+        let touchB = false, touchW = false;
+        const region = [];
+        seen[i] = 1; stack.length = 0; stack.push(i);
+        while (stack.length) {
+          const c = stack.pop(); region.push(c);
+          const s = size, x = c % s;
+          const nb = [];
+          if (x > 0) nb.push(c - 1);
+          if (x < s - 1) nb.push(c + 1);
+          if (c >= s) nb.push(c - s);
+          if (c < s * (s - 1)) nb.push(c + s);
+          for (let k = 0; k < nb.length; k++) {
+            const nn = nb[k];
+            if (work[nn] === BLACK) touchB = true;
+            else if (work[nn] === WHITE) touchW = true;
+            else if (!seen[nn]) { seen[nn] = 1; stack.push(nn); }
+          }
+        }
+        let owner = 0;
+        if (touchB && !touchW) owner = BLACK;
+        else if (touchW && !touchB) owner = WHITE;
+        if (owner) { for (const r of region) territory[r] = owner; if (owner === BLACK) terrB += region.length; else terrW += region.length; }
+        else if (ownership) {
+          // 公气/含未标死子的空域：交给 AI 形势判定
+          let oB = false, oW = false;
+          for (const r of region) { const v = ownership[r] || 0; if (v > ownT) oB = true; else if (v < -ownT) oW = true; }
+          if (oB && !oW) owner = BLACK;
+          else if (oW && !oB) owner = WHITE;
+          if (owner) { for (const r of region) territory[r] = owner; if (owner === BLACK) terrB += region.length; else terrW += region.length; }
         }
       }
-      let owner = 0;
-      if (touchB && !touchW) owner = BLACK;
-      else if (touchW && !touchB) owner = WHITE;
-      if (owner) { for (const r of region) territory[r] = owner; if (owner === BLACK) terrB += region.length; else terrW += region.length; }
-      else if (ownership) {
-        // 公气/含未标死子的空域：交给 AI 形势判定
-        let oB = false, oW = false;
-        for (const r of region) { const v = ownership[r] || 0; if (v > ownT) oB = true; else if (v < -ownT) oW = true; }
-        if (oB && !oW) owner = BLACK;
-        else if (oW && !oB) owner = WHITE;
-        if (owner) { for (const r of region) territory[r] = owner; if (owner === BLACK) terrB += region.length; else terrW += region.length; }
-      }
     }
-    let stonesB = 0, stonesW = 0;
-    for (let i = 0; i < work.length; i++) { if (work[i] === BLACK) stonesB++; else if (work[i] === WHITE) stonesW++; }
+    let stonesB = 0, stonesW = 0, empties = 0;
+    for (let i = 0; i < work.length; i++) {
+      if (work[i] === BLACK) stonesB++;
+      else if (work[i] === WHITE) stonesW++;
+      else empties++;
+    }
+    /* 公气 / 未定：空点里既未归黑也未归白的数量。中盘点目或 AI 归属不明确的点
+     * 会落在这里——UI 展示它，用户才明白为何 黑+白−贴目 < 棋盘点数。 */
+    const dame = Math.max(0, empties - terrB - terrW);
+    const dameMask = new Uint8Array(size * size);   // 供棋盘用第三种颜色标出公气点
+    for (let i = 0; i < work.length; i++) {
+      if (work[i] === EMPTY && !territory[i]) dameMask[i] = 1;
+    }
     let black, white;
     if (mode === 'territory') {
       black = terrB + pos.captures[BLACK] + deadStones.filter(i => b[i] === WHITE).length;
@@ -536,8 +578,118 @@
     return {
       black, white, komi, diff: black - white,
       result: black > white ? 'B+' + (black - white) : white > black ? 'W+' + (white - black) : 'Draw',
-      territory, deadStones: deadStones.slice(), stonesB, stonesW, terrB, terrW
+      territory, deadStones: deadStones.slice(), stonesB, stonesW, terrB, terrW, dame, dameMask
     };
+  }
+
+  /* ---------- Benson 全活判定 + 死子启发式（点目用） ---------- */
+  /* 所有同色连通块：[{color, stones:Set, libs:Set}] */
+  function allGroups(pos) {
+    const s = pos.size, b = pos.board;
+    const seen = new Uint8Array(s * s);
+    const groups = [];
+    for (let i = 0; i < b.length; i++) {
+      if (!b[i] || seen[i]) continue;
+      const color = b[i];
+      const stones = [], stack = [i], libs = new Set();
+      seen[i] = 1;
+      while (stack.length) {
+        const c = stack.pop(); stones.push(c);
+        const x = c % s;
+        const nb = [];
+        if (x > 0) nb.push(c - 1);
+        if (x < s - 1) nb.push(c + 1);
+        if (c >= s) nb.push(c - s);
+        if (c < s * (s - 1)) nb.push(c + s);
+        for (let k = 0; k < nb.length; k++) {
+          const n = nb[k];
+          if (b[n] === color) { if (!seen[n]) { seen[n] = 1; stack.push(n); } }
+          else if (!b[n]) libs.add(n);
+        }
+      }
+      groups.push({ color, stones: new Set(stones), libs });
+    }
+    return groups;
+  }
+  /* Benson pass-alive：返回无条件活棋的点索引 Set（双色混合）。
+   * 判定标准：块须有 ≥2 个 vital region（区域内所有空点都是该块的气）；
+   * 被淘汰的己方块在下一轮区域划分中视作区域的一部分，迭代至收敛。
+   * 用途：点目时保护这些块绝不判死——AI ownership 或启发式都可能误杀它们。 */
+  function bensonAlive(pos) {
+    const size = pos.size, b = pos.board;
+    const out = new Set();
+    for (const color of [BLACK, WHITE]) {
+      let alive = allGroups(pos).filter(g => g.color === color);
+      if (!alive.length) continue;
+      for (;;) {
+        /* 区域：从 color 视角 = 连通的（空点 ∪ 对方子 ∪ 本方已淘汰块） */
+        const isUs = (i) => b[i] === color && alive.some(g => g.stones.has(i));
+        const regions = [];
+        const rSeen = new Uint8Array(size * size);
+        for (let i = 0; i < b.length; i++) {
+          if (isUs(i) || rSeen[i]) continue;
+          const empties = [], stack = [i];
+          rSeen[i] = 1;
+          while (stack.length) {
+            const c = stack.pop();
+            if (!b[c]) empties.push(c);
+            const x = c % size;
+            const nb = [];
+            if (x > 0) nb.push(c - 1);
+            if (x < size - 1) nb.push(c + 1);
+            if (c >= size) nb.push(c - size);
+            if (c < size * (size - 1)) nb.push(c + size);
+            for (let k = 0; k < nb.length; k++) {
+              const n = nb[k];
+              if (!isUs(n) && !rSeen[n]) { rSeen[n] = 1; stack.push(n); }
+            }
+          }
+          regions.push({ empties: new Set(empties) });
+        }
+        let changed = false;
+        for (let gi = alive.length - 1; gi >= 0; gi--) {
+          const g = alive[gi];
+          let vital = 0;
+          for (const R of regions) {
+            if (!R.empties.size) continue;
+            let ok = true;
+            for (const e of R.empties) if (!g.libs.has(e)) { ok = false; break; }
+            if (ok) { vital++; if (vital >= 2) break; }
+          }
+          if (vital < 2) { alive.splice(gi, 1); changed = true; }
+        }
+        if (!changed) break;
+      }
+      for (const g of alive) for (const s of g.stones) out.add(s);
+    }
+    return out;
+  }
+  /* 无 AI 时的死子建议（双真眼启发式）：
+   * Benson 活块绝对保护；其余块数"真眼"（四邻全为己方的空点），
+   * 少于两眼 → 整块建议标死。只作初始建议，用户可在棋盘上点击翻转。 */
+  function heuristicDead(pos, aliveSet) {
+    const dead = new Set();
+    const size = pos.size, b = pos.board;
+    for (const g of allGroups(pos)) {
+      if (aliveSet && aliveSet.size) {
+        let prot = false;
+        for (const s of g.stones) if (aliveSet.has(s)) { prot = true; break; }
+        if (prot) continue;
+      }
+      let eyes = 0;
+      for (const e of g.libs) {
+        const x = e % size;
+        let all = true;
+        if (x > 0 && b[e - 1] !== g.color) all = false;
+        if (x < size - 1 && b[e + 1] !== g.color) all = false;
+        if (e >= size && b[e - size] !== g.color) all = false;
+        if (e < size * (size - 1) && b[e + size] !== g.color) all = false;
+        if (all) eyes++;
+        if (eyes >= 2) break;
+      }
+      if (eyes < 2) for (const s of g.stones) dead.add(s);
+    }
+    return dead;
   }
 
   /* ------------------------------------------------------------------ *
@@ -580,6 +732,15 @@
         p.push((node.move.color === BLACK ? 'B' : 'W') + '[' + v + ']');
       }
       if (node.comment) p.push('C[' + escSgf(node.comment) + ']');
+      /* 还原导入时保留的杂项属性（LB/TR/MA/SQ/CR/SL 等），否则往返一趟就丢了。
+       * node.props 的值可能是字符串（单值）或数组（多值），两种都要支持。 */
+      if (node.props) {
+        for (const k of Object.keys(node.props)) {
+          const v = node.props[k];
+          const vs = Array.isArray(v) ? v : [v];
+          p.push(k + vs.map((x) => '[' + escSgf(x) + ']').join(''));
+        }
+      }
       return p;
     }
     function walk(node) {
@@ -712,6 +873,12 @@
     if (g.root.props.RE) g.result = g.root.props.RE[0];
     if (g.root.props.DT) g.date = g.root.props.DT[0];
     if (g.root.props.EV) g.event = g.root.props.EV[0];
+    /* 对局计时 TM/OT 往返（OT 形如 "3x30 byo-yomi"） */
+    const tm = parseFloat(g.root.props.TM);
+    if (Number.isFinite(tm) && tm > 0) {
+      const om = /^(\d+)x(\d+(?:\.\d+)?)/i.exec(String(g.root.props.OT || ''));
+      g.timeControl = { main: tm, byo: om ? parseFloat(om[2]) : 0, periods: om ? parseInt(om[1], 10) : 0 };
+    }
     g.invalidate();
     return g;
   }
@@ -729,7 +896,13 @@
     else if (props.W) { const p = parseSgfVertex(props.W[0], size); node.move = p ? { color: WHITE, x: p[0], y: p[1], pass: !props.W[0] } : { color: WHITE, x: -1, y: -1, pass: true }; }
     if (props.C) node.comment = props.C.join('\n');
     const skip = new Set(['AB', 'AW', 'AE', 'B', 'W', 'C']);
-    for (const k of Object.keys(props)) if (!skip.has(k)) node.props[k] = props[k][0];
+    /* 非根节点的杂项属性（LB/TR/MA/SQ/CR/SL…）原样保留，导出时还原，避免往返丢失。
+     * 多值存数组、单值存字符串——与根节点的 root.props（恒为数组）区分开，
+     * 导出端对两种形态都做了兼容。 */
+    for (const k of Object.keys(props)) {
+      if (skip.has(k)) continue;
+      node.props[k] = props[k].length > 1 ? props[k] : props[k][0];
+    }
   }
   function mergeSetup(setup, list, color) {
     setup = setup || { AB: [], AW: [], AE: [] };
@@ -742,7 +915,7 @@
     EMPTY, BLACK, WHITE,
     Position, Game, Node, RULES,
     other, handicapStones, starPoints,
-    scorePosition, coordName, parseCoordName,
+    scorePosition, bensonAlive, heuristicDead, coordName, parseCoordName,
     gameToSgf, sgfToGame, sgfVertex, parseSgfVertex,
     GTP_LETTERS
   };

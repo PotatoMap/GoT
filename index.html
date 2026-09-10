@@ -1,17 +1,18 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="paper">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#17191d">
+  <meta name="theme-color" id="themeMeta" content="#1d2126">
   <meta name="description" content="GoT — 专业围棋对弈、复盘与 AI 分析工作台">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="manifest" href="manifest.webmanifest">
   <title>GoT</title>
-  <link rel="stylesheet" href="styles.css?v=1.0">
+  <link rel="stylesheet" href="styles.css?v=2.0">
 </head>
 <body>
   <svg class="icon-defs" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 20 20"><path d="m3 9 7-6 7 6v8h-5v-5H8v5H3z"/></symbol>
     <symbol id="i-new" viewBox="0 0 20 20"><path d="M10 4.4v11.2M4.4 10h11.2"/></symbol>
     <symbol id="i-open" viewBox="0 0 20 20"><path d="M3.2 6.2 10 3l6.8 3.2v7.6L10 17l-6.8-3.2z"/><path d="M3.2 6.2 10 9.4l6.8-3.2M10 9.4V17"/></symbol>
     <symbol id="i-save" viewBox="0 0 20 20"><path d="M5 3.4h8.2L16.6 6.8V16.6H5z"/><path d="M7 3.4v4h6M7 16.6v-5h6v5"/></symbol>
@@ -37,49 +38,75 @@
     <symbol id="i-play" viewBox="0 0 20 20"><path d="M7 4.8 15 10l-8 5.2z"/></symbol>
     <symbol id="i-settings" viewBox="0 0 20 20"><circle cx="10" cy="10" r="2.6"/><path d="M10 3v2.2M10 14.8V17M17 10h-2.2M5.2 10H3M14.9 5.1l-1.5 1.5M6.6 13.4l-1.5 1.5M14.9 14.9l-1.5-1.5M6.6 6.6 5.1 5.1"/></symbol>
     <symbol id="i-display" viewBox="0 0 20 20"><path d="M4 6h8M16 6h-1.6M4 14h3.4M11 14h6M4 10h12"/><circle cx="13.6" cy="6" r="1.8"/><circle cx="8.8" cy="14" r="1.8"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 20 20"><g fill="currentColor"><rect x="3" y="3" width="3.4" height="3.4" rx="1"/><rect x="8.3" y="3" width="3.4" height="3.4" rx="1"/><rect x="13.6" y="3" width="3.4" height="3.4" rx="1"/><rect x="3" y="8.3" width="3.4" height="3.4" rx="1"/><rect x="8.3" y="8.3" width="3.4" height="3.4" rx="1"/><rect x="13.6" y="8.3" width="3.4" height="3.4" rx="1"/><rect x="3" y="13.6" width="3.4" height="3.4" rx="1"/><rect x="8.3" y="13.6" width="3.4" height="3.4" rx="1"/><rect x="13.6" y="13.6" width="3.4" height="3.4" rx="1"/></g></symbol>
+    <symbol id="i-learn" viewBox="0 0 20 20"><path d="M3.2 4.5h5.4a2 2 0 0 1 1.4.6l.1.1.1-.1a2 2 0 0 1 1.4-.6h5.2v11h-5.2a2 2 0 0 0-1.5.7 2 2 0 0 0-1.5-.7H3.2z"/><path d="M10.1 5.2v10.3"/></symbol>
   </svg>
 
   <header class="app-header">
     <a class="brand" href="#" aria-label="GoT">
-      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <img class="brand-logo" src="brand.svg" alt="">
       <span class="brand-name">GO<strong>T</strong><em data-i18n="brandSub">围棋</em></span>
-      <span class="version-label" title="版本 1.0 / Version 1.0">v1.0</span>
+      <span class="version-label" title="Flow &amp; Focus">2.0</span>
     </a>
-    <div class="header-tools">
-      <button class="tool-button icon-btn" id="displaySettingsBtn" type="button" data-i18n-title="displaySettings" aria-label="显示设置">
-        <svg><use href="#i-display"></use></svg>
+    <nav class="workspace-switch" aria-label="工作区" data-i18n-aria="workspaceNav">
+      <button class="tool-button" id="homeWorkspaceBtn" type="button" aria-pressed="false"><svg><use href="#i-home"></use></svg><span data-i18n="homeWorkspace">首页</span></button>
+      <button class="tool-button" id="playWorkspaceBtn" type="button" aria-pressed="true"><svg><use href="#i-coords"></use></svg><span data-i18n="playWorkspace">对局</span></button>
+      <button class="tool-button" id="learnWorkspaceBtn" type="button" aria-pressed="false" data-i18n-title="learnWorkspaceTitle" aria-label="学习">
+        <svg><use href="#i-learn"></use></svg><span data-i18n="learnWorkspace">学习</span>
       </button>
-      <button class="tool-button" id="newGameBtn" type="button" data-i18n-title="newGame" aria-label="新对局">
-        <svg><use href="#i-new"></use></svg><span data-i18n="newGame">新对局</span>
+      <button class="tool-button" id="problemBtn" type="button" data-i18n-title="problems" aria-label="死活题">
+        <svg><use href="#i-puzzle"></use></svg><span data-i18n="problems">死活题</span>
       </button>
+      <button class="tool-button" id="reviewToggleBtn" type="button" aria-pressed="false" data-i18n-title="reviewWorkspace"><svg><use href="#i-tree"></use></svg><span data-i18n="reviewWorkspace">复盘</span></button>
       <button class="tool-button" id="openBtn" type="button" data-i18n-title="openSgf" aria-label="打开棋谱">
-        <svg><use href="#i-open"></use></svg><span data-i18n="openSgf">打开</span>
+        <svg><use href="#i-open"></use></svg><span data-i18n="recordLibrary">打开</span>
       </button>
-      <button class="tool-button" id="saveBtn" type="button" data-i18n-title="saveSgf" aria-label="保存棋谱">
-        <svg><use href="#i-save"></use></svg><span data-i18n="saveSgf">保存</span>
-      </button>
-      <button class="tool-button" id="engineSettingsBtn" type="button" data-i18n-title="engineSettings" aria-label="引擎设置">
-        <svg><use href="#i-settings"></use></svg><span data-i18n="engineSettings">引擎</span>
-      </button>
-    </div>
+    </nav>
+    <!-- DOM 顺序 = 视觉顺序（侧栏自上而下）：品牌 → 导航 → 对局工具 → 设置 → 引擎状态/语言 → 座右铭 -->
+    <div class="sidebar-utilities">
+    <button class="tool-button sidebar-control" id="shellSettingsBtn" type="button" aria-pressed="false"><svg><use href="#i-settings"></use></svg><span data-i18n="shellSettings">设置</span></button>
+    <button class="tool-button sidebar-control" id="languageToggle" type="button" aria-label="切换语言"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><ellipse cx="10" cy="10" rx="3" ry="7"/><path d="M3 10h14"/></svg><span id="languageToggleText">English</span></button>
     <div class="header-status">
       <span class="engine-pill" id="enginePill">
         <i class="status-dot" id="engineDot" aria-hidden="true"></i>
         <span id="enginePillText" data-i18n="engineOff">内置引擎</span>
       </span>
-      <button class="language-toggle" id="languageToggle" type="button" aria-label="切换语言">EN</button>
     </div>
+    </div>
+    <p class="sidebar-motto">GOT<br>YOUR GO<br>FURTHER</p>
   </header>
 
+  <section id="homeWorkspace" class="home-workspace" hidden aria-label="首页">
+    <div class="home-heading"><div><p class="home-date" id="homeDate"></p><h1 id="homeGreeting"></h1></div><span class="home-signature">Your Go, further.</span></div>
+    <div class="home-grid">
+      <article class="home-main home-surface"><div class="home-card-heading"><div><h2 id="homeGameTitle"></h2><p id="homeGameMeta"></p></div><span class="home-session" id="homeSession"></span></div><div class="home-board-stage" id="homeBoardStage"><canvas id="homeBoard" aria-label="当前棋局预览"></canvas></div><button class="home-primary" id="homePlay" type="button"></button><button class="home-text-button" id="homeImport" type="button"></button></article>
+      <div class="home-aside">
+        <article class="home-surface home-task"><div class="home-card-heading"><h2 id="homeProblemTitle"></h2><button class="home-text-button" id="homeShuffle" type="button"></button></div><div class="home-task-body"><div id="homeProblemBoard" class="home-mini-board"></div><div><h3 id="homeProblemName"></h3><p id="homeProblemMeta"></p><button class="home-secondary" id="homeProblemStart" type="button"></button></div></div></article>
+        <article class="home-surface home-task"><h2 id="homeCourseTitle"></h2><p id="homeCourseDesc"></p><div class="home-course-track" aria-hidden="true"><span></span><span></span><span></span><span></span></div><button class="home-secondary" id="homeCourse" type="button"></button></article>
+        <article class="home-surface home-task"><h2 id="homeLibraryTitle"></h2><p id="homeLibraryDesc"></p><button class="home-secondary" id="homeLibrary" type="button"></button></article>
+      </div>
+      <section class="home-progress home-surface" aria-label="学习进度"><div><h2 id="homeProgressTitle"></h2><p id="homeProgressNote"></p></div><div id="homeStats" class="home-stats"></div><button class="home-text-button" id="homePractice" type="button"></button></section>
+    </div>
+  </section>
   <main class="workbench">
     <!-- 中栏：棋盘 -->
-    <section class="board-column" aria-label="棋盘">
+    <section class="board-column" aria-label="棋盘" data-i18n-aria="boardLabel">
+      <!-- 复盘「练习」模式提示条：说明执色、目标与退出入口，避免切工作区后不明所以 -->
+      <div class="practice-strip hidden" id="practiceStrip" role="status" aria-live="polite">
+        <i class="ps-stone" id="practiceStone" aria-hidden="true"></i>
+        <b data-i18n="practiceActive">练习中</b>
+        <span id="practiceColor"></span>
+        <span id="practiceTarget"></span>
+        <span id="practiceResult"></span>
+        <button class="tool-button ps-exit" id="practiceRetryBtn" type="button" hidden><span data-i18n="practiceRetry">重来</span></button>
+        <button class="tool-button ps-exit" id="practiceExitBtn" type="button"><span data-i18n="practiceExit">结束练习</span></button>
+      </div>
       <div class="board-stage" id="boardStage">
-        <canvas id="boardCanvas" aria-label="围棋棋盘"></canvas>
+        <canvas id="boardCanvas" aria-label="围棋棋盘" data-i18n-aria="boardCanvasAria"></canvas>
         <div class="preview-badge" id="previewBadge" hidden data-i18n="previewing">预览中</div>
       </div>
-      <div class="tool-rail" role="toolbar" aria-label="对局控制">
-        <div class="nav-cluster" role="group" aria-label="手数导航">
+      <div class="tool-rail" role="toolbar" aria-label="对局控制" data-i18n-aria="gameToolbar">
+        <div class="nav-cluster" role="group" aria-label="手数导航" data-i18n-aria="moveNav">
           <button class="tool-button icon-btn" id="firstMoveBtn" type="button" data-i18n-title="firstMove" aria-label="首手">
             <svg><use href="#i-first"></use></svg>
           </button>
@@ -94,52 +121,33 @@
             <svg><use href="#i-last"></use></svg>
           </button>
         </div>
-        <span class="tool-sep" aria-hidden="true"></span>
         <button class="tool-button" id="undoBtn" type="button" data-i18n-title="undo">
           <svg><use href="#i-undo"></use></svg><span data-i18n="undo">悔棋</span>
         </button>
-        <button class="tool-button" id="redoBtn" type="button" data-i18n-title="redo">
-          <svg><use href="#i-redo"></use></svg><span data-i18n="redo">前进</span>
-        </button>
+        <button class="tool-button primary" id="resumePlayBtn" type="button" hidden data-i18n="resumeHere">从此处续弈</button>
         <button class="tool-button" id="passBtn" type="button" data-i18n-title="pass">
           <svg><use href="#i-pass"></use></svg><span data-i18n="pass">停着</span>
         </button>
         <button class="tool-button danger-btn" id="resignBtn" type="button" data-i18n-title="resign">
           <svg><use href="#i-resign"></use></svg><span data-i18n="resign">认输</span>
         </button>
-        <span class="tool-sep" aria-hidden="true"></span>
-        <button class="tool-button icon-btn toggle" id="analysisBtn" type="button" aria-pressed="false" data-i18n-title="analysis" aria-label="分析">
-          <svg><use href="#i-chart"></use></svg>
+        <button class="tool-button toggle" id="scoreBtn" type="button" aria-pressed="false" data-i18n-title="scoreMode" aria-label="点目">
+          <svg><use href="#i-score"></use></svg><span  data-i18n="scoreMode">点目</span>
         </button>
-        <button class="tool-button icon-btn toggle" id="ownershipBtn" type="button" aria-pressed="false" data-i18n-title="ownership" aria-label="形势">
-          <svg><use href="#i-heat"></use></svg>
+        <button class="tool-button " id="displaySettingsBtn" type="button" data-i18n-title="displaySettings" aria-label="显示设置">
+        <svg><use href="#i-display"></use></svg>
+      <span data-i18n="displayOptions">棋盘工具</span></button>
+        <button class="tool-button" id="focusBtn" type="button" aria-pressed="false" data-i18n-title="focusBoard" aria-label="专注模式">
+          <svg><use href="#i-focus"></use></svg><span data-i18n="focusBoard">专注</span>
         </button>
-        <button class="tool-button icon-btn toggle" id="numbersBtn" type="button" aria-pressed="false" data-i18n-title="showNumbers" aria-label="手数">
-          <svg><use href="#i-numbers"></use></svg>
-        </button>
-        <button class="tool-button icon-btn toggle" id="coordsBtn" type="button" aria-pressed="true" data-i18n-title="showCoords" aria-label="坐标">
-          <svg><use href="#i-coords"></use></svg>
-        </button>
-        <button class="tool-button icon-btn toggle" id="flipBtn" type="button" aria-pressed="false" data-i18n-title="flip" aria-label="翻转">
-          <svg><use href="#i-flip"></use></svg>
-        </button>
-        <button class="tool-button icon-btn toggle" id="scoreBtn" type="button" aria-pressed="false" data-i18n-title="scoreMode" aria-label="点目">
-          <svg><use href="#i-score"></use></svg>
-        </button>
-        <button class="tool-button icon-btn toggle" id="confirmBtn" type="button" aria-pressed="false" data-i18n-title="confirmMove" aria-label="确认落子">
-          <svg><use href="#i-confirm"></use></svg>
-        </button>
-        <span class="tool-sep" aria-hidden="true"></span>
-        <button class="tool-button icon-btn" id="focusBtn" type="button" aria-pressed="false" data-i18n-title="focusBoard" aria-label="专注模式">
-          <svg><use href="#i-focus"></use></svg>
-        </button>
+        <button class="tool-button mobile-panel-toggle" id="mobilePanelBtn" type="button" aria-expanded="false" aria-controls="inspectorPanel"><svg><use href="#i-display"></use></svg><span id="mobilePanelLabel">分析与棋谱树</span></button>
       </div>
-      <section class="evalgraph-section" aria-label="胜率曲线">
+      <section class="evalgraph-section" aria-label="胜率曲线" data-i18n-aria="evalGraphAria">
         <div class="section-heading"><span data-i18n="evalGraph">胜率曲线</span><span class="graph-legend" data-i18n="graphLegend">黑方胜率 · 目差 ±15</span></div>
         <canvas id="evalGraph" height="72"></canvas>
       </section>
       <!-- 点目模式浮动工具条 -->
-      <div class="score-strip hidden" id="scoreStrip" role="region" aria-label="点目">
+      <div class="score-strip hidden" id="scoreStrip" role="region" aria-label="点目" data-i18n-aria="scoreModeAria">
         <div class="ss-score">
           <i class="mini-stone black" aria-hidden="true"></i><b id="stripBlack">0</b>
           <span class="ss-vs">vs</span>
@@ -161,8 +169,44 @@
     </section>
 
     <!-- 右栏：棋手 / 分析 / 棋谱树 -->
-    <aside class="analysis-column" aria-label="棋手与分析">
-      <header class="match-header" aria-label="棋手信息">
+    <aside class="analysis-column" id="inspectorPanel" aria-label="棋手与分析" data-i18n-aria="analysisColumn">
+    <button class="tool-button mobile-panel-close" id="mobilePanelClose" type="button" data-i18n="backToBoard">返回棋盘</button>
+    <div class="task-context"><strong id="taskContextTitle"></strong><span id="taskContextState"></span><button class="btn ghost" id="returnRecordsBtn" type="button" data-i18n="browseRecords">浏览棋谱</button></div>
+    <div class="game-actions">
+      <button class="tool-button" id="newGameBtn" type="button" data-i18n-title="newGame" aria-label="新对局">
+        <svg><use href="#i-new"></use></svg><span data-i18n="newGame">新对局</span>
+      </button>
+
+      <button class="tool-button" id="saveBtn" type="button" data-i18n-title="saveSgf" aria-label="保存棋谱">
+        <svg><use href="#i-save"></use></svg><span data-i18n="exportRecord">保存</span>
+      </button>
+    </div>
+
+      <section class="problem-banner hidden" id="problemBanner" aria-label="死活题" data-i18n-aria="problems">
+        <button class="tool-button" id="problemChoose" type="button"><svg><use href="#i-puzzle"></use></svg><span data-i18n="chooseProblem">选择题目</span></button>
+        <div class="pb-info"><strong id="problemSetName">—</strong><span id="problemNo">—</span></div>
+        <div class="pb-details"><span id="problemLevel">—</span><span id="problemTurn">—</span></div>
+        <div class="problem-progress-block" aria-live="polite">
+          <div class="problem-progress-head"><span data-i18n="problemProgress">本题进度</span><strong id="problemProgressValue">0 / 0</strong></div>
+          <div class="problem-progress-track" id="problemProgressTrack" role="progressbar" data-i18n-aria="problemProgress" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 / 0"><i id="problemProgressBar"></i></div>
+          <div class="problem-progress-meta"><span id="problemSetProgress">本集完成 0 / 0 · 看过 0</span><span id="problemCompletion" class="problem-completion" hidden></span></div>
+        </div>
+        <p class="dialog-hint" data-i18n="problemInstructions">请依次走出双方的正确应对。</p>
+        <div class="problem-status" id="problemStatus" role="status" aria-live="polite"></div>
+        <div class="pb-actions">
+          <button class="tool-button" id="problemHint" type="button" data-i18n="problemsHint">提示</button>
+          <button class="tool-button" id="problemReset" type="button" data-i18n="problemsReset">重试</button>
+          <button class="tool-button" id="problemSolution" type="button" data-i18n="problemsSolution">查看正解</button>
+        </div>
+        <div class="pb-navigation">
+          <button class="tool-button" id="problemPrev" type="button" data-i18n="problemsPrev">上一题</button>
+          <button class="tool-button" id="problemNext" type="button" data-i18n="problemsNext">下一题</button>
+        </div>
+        <div class="pb-footer">
+          <button class="tool-button" id="problemExit" type="button" data-i18n="problemsExit">返回棋局</button>
+        </div>
+      </section>
+      <header class="match-header" aria-label="棋手信息" data-i18n-aria="matchInfo">
         <div class="player-card" id="blackCard">
           <span class="player-stone black" aria-hidden="true"></span>
           <div class="player-meta">
@@ -172,6 +216,7 @@
           <div class="player-right">
             <b class="captures" id="blackCaptures">0</b>
             <span class="captures-label" data-i18n="captures">提子</span>
+            <b class="clock" id="clockBlack" hidden></b>
           </div>
           <span class="thinking-dot" id="blackThinking" hidden><i></i><i></i><i></i></span>
         </div>
@@ -184,12 +229,13 @@
           <div class="player-right">
             <b class="captures" id="whiteCaptures">0</b>
             <span class="captures-label" data-i18n="captures">提子</span>
+            <b class="clock" id="clockWhite" hidden></b>
           </div>
           <span class="thinking-dot" id="whiteThinking" hidden><i></i><i></i><i></i></span>
         </div>
       </header>
       <div class="match-meta-row">
-        <div class="info-card" role="group" aria-label="对局信息">
+        <div class="info-card" role="group" aria-label="对局信息" data-i18n-aria="gameInfo">
           <span class="meta-strong" id="infoRule">中国规则</span>
           <span class="meta-item" id="infoKomiItem"><span class="meta-sep" aria-hidden="true"></span><span data-i18n="komi">贴目</span><b id="infoKomi">7.5</b></span>
           <span class="meta-item" id="infoHandicapItem" hidden><span class="meta-sep" aria-hidden="true"></span><span data-i18n="handicap">让子</span><b id="infoHandicap">0</b></span>
@@ -198,12 +244,35 @@
         </div>
       </div>
 
-      <div class="tabs" role="tablist">
-        <button class="tab" id="tabAnalysis" role="tab" aria-selected="false" data-i18n="tabAnalysis">AI 分析</button>
-        <button class="tab selected" id="tabTree" role="tab" aria-selected="true" data-i18n="tabTree">棋谱树</button>
+      <div class="tabs" role="tablist" aria-label="分析面板" data-i18n-aria="analysisTabs">
+        <button class="tab" id="tabAnalysis" role="tab" aria-controls="pageAnalysis" aria-selected="false" data-i18n="tabAnalysis">AI 分析</button>
+        <button class="tab selected" id="tabTree" role="tab" aria-controls="pageTree" aria-selected="true" data-i18n="tabTree">棋谱树</button>
       </div>
 
-      <div class="tab-page hidden" id="pageAnalysis">
+      <div class="tab-page hidden" id="pageAnalysis" role="tabpanel" aria-labelledby="tabAnalysis">
+        <div class="analysis-controls">
+          <button class="tool-button toggle" id="analysisBtn" type="button" aria-pressed="false" data-i18n-title="analysis" aria-label="分析">
+          <svg><use href="#i-chart"></use></svg><span id="analysisAction">分析</span>
+        </button>
+          <button class="tool-button toggle" id="ownershipBtn" type="button" aria-pressed="false" data-i18n-title="ownership" aria-label="形势">
+          <svg><use href="#i-heat"></use></svg><span  data-i18n="ownership">形势</span>
+        </button>
+          <span class="analysis-state" id="analysisState" role="status"></span>
+        </div>
+        <p class="analysis-intro" id="analysisIntro" data-i18n="analysisIntro">直接在棋盘上落子开始对局。需要参考时，可开启 AI 分析。</p>
+        <div class="analysis-empty-state" id="analysisEmptyState" hidden>
+          <span class="analysis-empty-mark" aria-hidden="true"><svg><use href="#i-chart"></use></svg></span>
+          <div><strong data-i18n="analysisEmptyTitle">分析从这里开始</strong><p data-i18n="analysisEmptyBody">当前局面还没有分析结果。开启 AI 分析后，候选着法、胜率和形势会显示在这里。</p></div>
+        </div>
+        <div class="analysis-tools">
+          <button class="tool-button" id="deepenBtn" type="button" data-i18n="deepen">加深分析</button>
+          <button class="tool-button toggle" id="analyzeMoveBtn" type="button" aria-pressed="false" data-i18n="analyzeMove">指定着点</button>
+          <button class="tool-button" id="equalizeBtn" type="button" data-i18n="equalize">等量比较</button>
+        </div>
+        <label class="strength-quick" id="strengthQuick" hidden><span data-i18n="opponentStrength">对手棋力</span>
+          <select id="quickStrength" data-i18n-aria="opponentStrength"></select>
+        </label>
+        <p class="analysis-guide" data-i18n="analysisGuide">损目是 AI 估计值；2目起标记失误，5目起标记重大失误。低搜索量结果需加深复核。</p>
       <div class="lastmove-card" id="lastMoveCard">
         <div class="card-heading">
           <span data-i18n="lastMove">上一手</span>
@@ -217,7 +286,7 @@
 
 
         <section class="winrate-section">
-          <div class="winrate-bar" id="winrateBar" role="img" aria-label="胜率">
+          <div class="winrate-bar" id="winrateBar" role="img" aria-label="胜率" data-i18n-aria="winrateAria">
             <div class="winrate-fill black" id="winrateFill"></div>
             <span class="winrate-label left" id="winrateBlackLabel">—</span>
             <span class="winrate-label right" id="winrateWhiteLabel">—</span>
@@ -237,13 +306,13 @@
               <button class="mode-switch" id="autoPreviewBtn" type="button" aria-pressed="false" data-i18n-title="autoPreview"><span data-i18n="autoPreview">自动推演</span></button>
             </span>
           </div>
-          <div class="candidate-list" id="candidateList" role="listbox" aria-label="候选着法"></div>
+          <div class="candidate-list" id="candidateList" role="listbox" aria-label="候选着法" data-i18n-aria="candidateAria"></div>
           <p class="cand-empty" id="candEmpty" hidden data-i18n="candEmptyHint">开启「分析」或等待 AI 计算，即可查看候选着法与胜率</p>
           <p class="pv-line" id="pvLine" data-i18n-title="pvTitle"></p>
         </section>
 
         <!-- 复盘训练（并入分析页） -->
-        <div class="review-divider"><span data-i18n="reviewSection">复盘训练</span><button class="mode-switch" id="reviewToggleBtn" type="button" aria-pressed="false" data-i18n-title="reviewMode"><span data-i18n="reviewMode">复盘模式</span></button></div>
+        <section class="review-section"><div class="review-divider"><span data-i18n="reviewSection">复盘训练</span></div>
         <div class="review-toolbar">
           <button class="tool-button primary" id="reviewStartBtn" type="button">
             <svg><use href="#i-chart"></use></svg><span data-i18n="runReview">AI 复盘</span>
@@ -261,21 +330,31 @@
             <svg><use href="#i-next"></use></svg>
           </button>
           <span class="review-progress-text" id="reviewProgress"></span>
+          <label class="review-depth" for="reviewDepthSelect" data-i18n-title="reviewDepthHint">
+            <span data-i18n="reviewDepth">分析深度</span>
+            <select id="reviewDepthSelect">
+              <option value="quick" data-i18n="reviewDepthQuick">快速</option>
+              <option value="standard" data-i18n="reviewDepthStandard">标准</option>
+              <option value="deep" data-i18n="reviewDepthDeep">深度</option>
+            </select>
+          </label>
         </div>
         <div class="review-progress"><i id="reviewBar"></i></div>
         <div class="review-summary" id="reviewSummary" hidden></div>
+        <div class="review-focus" id="reviewFocus" hidden></div>
         <p class="review-empty" id="reviewEmpty" data-i18n="reviewEmpty">运行 AI 复盘：生成双方 AI 吻合度、平均损失、评级分布与每手详细胜率评测，点击任意一手可在棋盘上跳转。</p>
         <div class="review-table-wrap">
-          <table class="review-table" id="reviewTable" aria-label="每手评测"></table>
+          <table class="review-table" id="reviewTable" aria-label="每手评测" data-i18n-aria="reviewTableAria"></table>
         </div>
+      </section>
       </div>
 
-      <div class="tab-page" id="pageTree">
+      <div class="tab-page" id="pageTree" role="tabpanel" aria-labelledby="tabTree">
         <div class="tree-toolbar">
           <button class="tool-button" id="treeMainBtn" type="button"><svg><use href="#i-tree"></use></svg><span data-i18n="backMain">回到主线</span></button>
           <span class="tree-hint" data-i18n="treeHint">← → 换手 · ↑ ↓ 切换分支</span>
         </div>
-        <div class="game-tree" id="gameTree" role="tree" aria-label="棋谱树"></div>
+        <div class="game-tree" id="gameTree" role="tree" aria-label="棋谱树" data-i18n-aria="gameTreeAria"></div>
         <div class="comment-box">
           <label for="commentBox" data-i18n="commentLabel">备注</label>
           <textarea id="commentBox" rows="3" spellcheck="false" data-i18n-placeholder="commentPlaceholder"></textarea>
@@ -283,6 +362,9 @@
       </div>
     </aside>
   </main>
+
+  <!-- 学习工作区：与对局、复盘、死活题并列；进入时由 js/learning.js 独立渲染。 -->
+  <section class="learning-workspace" id="learningWorkspace" hidden aria-label="学习" data-i18n-aria="learnWorkspaceTitle"></section>
 
   <footer class="status-bar">
     <span id="statusCoord">—</span>
@@ -333,7 +415,7 @@
           </div>
         </label>
         <label id="ngStrengthLabel"><span data-i18n="strength">棋力</span>
-          <div class="strength" id="ngStrength" role="radiogroup" aria-label="棋力">
+          <div class="strength" id="ngStrength" role="radiogroup" aria-label="棋力" data-i18n-aria="strengthAria">
             <button type="button" data-s="1">1</button><button type="button" data-s="2">2</button>
             <button type="button" data-s="3">3</button><button type="button" data-s="4">4</button>
             <button type="button" class="selected" data-s="5">5</button><button type="button" data-s="6">6</button>
@@ -348,6 +430,16 @@
             <option value="2000">2s</option>
             <option value="4000">4s</option>
             <option value="8000">8s</option>
+          </select>
+        </label>
+        <label><span data-i18n="timeControl">计时</span>
+          <select id="ngTimeControl">
+            <option value="off" selected data-i18n="timeOff">不计时</option>
+            <option value="blitz" data-i18n="timeBlitz">1分 + 3×20秒</option>
+            <option value="standard" data-i18n="timeStandard">5分 + 3×30秒</option>
+            <option value="long" data-i18n="timeLong">10分 + 5×30秒</option>
+            <option value="casual" data-i18n="timeCasual">15分（无读秒）</option>
+            <option value="fischer" data-i18n="timeFischer">3分 + 每手加2秒</option>
           </select>
         </label>
       </div>
@@ -398,15 +490,19 @@
         <div class="score-cell"><i class="mini-stone white"></i><b id="scoreWhitePts">0</b><span data-i18n="white">白</span></div>
       </div>
       <p class="score-result" id="scoreResultText">—</p>
-      <table class="score-table" aria-label="点目明细">
+      <table class="score-table" aria-label="点目明细" data-i18n-aria="scoreTableAria">
         <thead><tr><th></th><th data-i18n="black">黑</th><th data-i18n="white">白</th></tr></thead>
         <tbody>
           <tr id="sdStonesRow"><td data-i18n="stonesRow">棋子</td><td id="sdStonesB">—</td><td id="sdStonesW">—</td></tr>
           <tr><td data-i18n="territoryRow">领地</td><td id="sdTerrB">—</td><td id="sdTerrW">—</td></tr>
           <tr id="sdPrisRow"><td data-i18n="prisonersRow">提子（含死子）</td><td id="sdPrisB">—</td><td id="sdPrisW">—</td></tr>
           <tr><td data-i18n="komi">贴目</td><td></td><td id="sdKomi">—</td></tr>
+          <tr id="sdDameRow"><td data-i18n="dameRow">公气 / 未定</td><td id="sdDame" colspan="2">—</td></tr>
+          <tr id="sdAiRow"><td data-i18n="aiRefRow">AI 参考</td><td id="sdAiVal" colspan="2">—</td></tr>
         </tbody>
       </table>
+      <p class="score-rule" id="sdDameNote" hidden></p>
+      <p class="score-rule" id="sdAiNote" hidden></p>
       <p class="score-rule" id="sdRule"></p>
       <div class="dialog-actions">
         <button type="button" class="btn ghost" id="scKeep" data-i18n="keepPlaying">继续对局</button>
@@ -416,9 +512,9 @@
   </dialog>
 
   <!-- 认输确认 -->
-  <dialog class="dialog small" id="resignDialog">
+  <dialog class="dialog small" id="resignDialog" aria-labelledby="resignTitle">
     <form method="dialog">
-      <h2 data-i18n="resignConfirm">确认认输？</h2>
+      <h2 id="resignTitle" data-i18n="resignConfirm">确认认输？</h2>
       <div class="dialog-actions">
         <button type="button" class="btn ghost" id="rsCancel" data-i18n="cancel">取消</button>
         <button type="button" class="btn danger" id="rsConfirm" data-i18n="resign">认输</button>
@@ -431,6 +527,35 @@
     <form method="dialog">
       <h2 id="dsTitle" data-i18n="displaySettings">显示设置</h2>
       <p class="dialog-hint" data-i18n="displaySettingsHint">候选着法的棋盘圈颜色与右栏排序方式。改动立即生效并记住。</p>
+      <fieldset class="settings-group"><legend data-i18n="boardDisplay">棋盘显示</legend>
+        <div class="settings-toggles"><button class="tool-button toggle" id="numbersBtn" type="button" aria-pressed="false" data-i18n-title="showNumbers" aria-label="手数">
+          <svg><use href="#i-numbers"></use></svg><span  data-i18n="showNumbers">手数</span>
+        </button>
+<button class="tool-button toggle" id="coordsBtn" type="button" aria-pressed="true" data-i18n-title="showCoords" aria-label="坐标">
+          <svg><use href="#i-coords"></use></svg><span  data-i18n="showCoords">坐标</span>
+        </button>
+<button class="tool-button toggle" id="flipBtn" type="button" aria-pressed="false" data-i18n-title="flip" aria-label="翻转">
+          <svg><use href="#i-flip"></use></svg><span  data-i18n="flip">翻转</span>
+        </button></div>
+      </fieldset>
+      <fieldset class="settings-group"><legend data-i18n="operationPreferences">操作偏好</legend>
+        <div class="settings-toggles"><button class="tool-button toggle" id="confirmBtn" type="button" aria-pressed="false" data-i18n-title="confirmMove" aria-label="确认落子">
+          <svg><use href="#i-confirm"></use></svg><span  data-i18n="confirmMove">落子确认</span>
+        </button>
+          <button class="tool-button toggle" id="soundBtn" type="button" aria-pressed="true" data-i18n="soundLabel">音效</button>
+          <button class="tool-button" id="redoBtn" type="button" data-i18n="redo">恢复悔棋</button>
+        </div><p class="dialog-hint" data-i18n="shortcutHelp">← → 浏览棋谱 · U 悔棋 · R 恢复悔棋 · M 音效</p>
+      </fieldset>
+      <fieldset class="settings-group"><legend data-i18n="themeLabel">主题</legend>
+        <label class="wide-label"><span data-i18n="themeMode">界面主题</span>
+          <select id="themeSelect">
+            <option value="obsidian" data-i18n="themeObsidian">石墨木纹</option>
+            <option value="paper" data-i18n="themePaper">纸张暖白</option>
+            <option value="forest" data-i18n="themeForest">森林青绿</option>
+          </select>
+        </label>
+        <p class="dialog-hint" data-i18n="themeHint">界面与棋盘配色会一起更新，并记住你的选择。</p>
+      </fieldset>
       <label class="wide-label"><span data-i18n="candColorMode">棋盘候选圈颜色</span>
         <select id="dsCandColor">
           <option value="winrate" data-i18n="candColorWinrate">按胜率（绿高红低）</option>
@@ -450,9 +575,9 @@
   </dialog>
 
   <!-- 关于 -->
-  <dialog class="dialog small" id="aboutDialog">
+  <dialog class="dialog small" id="aboutDialog" aria-labelledby="aboutTitle">
     <form method="dialog">
-      <h2>GoT <span data-i18n="brandSub">围棋</span></h2>
+      <h2 id="aboutTitle">GoT <span data-i18n="brandSub">围棋</span></h2>
       <p class="dialog-hint" id="aboutVersion"></p>
       <p class="dialog-hint" data-i18n="aboutText">专业围棋工作台：内置 MCTS 引擎 + GTP 外部引擎（KataGo 等）+ 实时胜率分析 + 棋谱树。SGF 4 完整支持。</p>
       <div class="dialog-actions">
@@ -462,14 +587,82 @@
     </form>
   </dialog>
 
-  <input type="file" id="fileInput" accept=".sgf,.json,text/plain,application/json" hidden>
+  <!-- 设置：真正的设置页（分区 + 跳转到各专项弹窗）。「引擎」入口也收在这里。 -->
+  <dialog class="dialog settings-dialog" id="settingsDialog" aria-labelledby="setTitle">
+    <form method="dialog">
+      <h2 id="setTitle" data-i18n="settingsTitle">设置</h2>
+      <div class="settings-page">
+        <section class="settings-section">
+          <h3 data-i18n="settingsSectionPlay">对局</h3>
+          <div class="form-grid">
+            <label><span data-i18n="strength">棋力</span><select id="setStrength"></select></label>
+            <label><span data-i18n="thinkTime">用时</span>
+              <select id="setTime">
+                <option value="500">0.5s</option><option value="1000">1s</option>
+                <option value="2000">2s</option><option value="4000">4s</option><option value="8000">8s</option>
+              </select>
+            </label>
+          </div>
+          <button class="btn ghost" id="setNewGame" type="button" data-i18n="newGame">新对局</button>
+        </section>
+        <section class="settings-section">
+          <h3 data-i18n="settingsSectionEngine">引擎</h3>
+          <p class="dialog-hint" id="setEngineState">—</p>
+          <button class="btn ghost" id="engineSettingsBtn" type="button" data-i18n="engineSettings">引擎</button>
+        </section>
+        <section class="settings-section">
+          <h3 data-i18n="settingsSectionBoard">棋盘与显示</h3>
+          <button class="btn ghost" id="setDisplay" type="button" data-i18n="displaySettings">显示设置</button>
+        </section>
+        <section class="settings-section">
+          <h3 data-i18n="settingsSectionMore">语言与关于</h3>
+          <div class="settings-toggles">
+            <button class="tool-button" id="setLang" type="button" aria-label="切换语言">EN</button>
+            <button class="tool-button" id="setAbout" type="button" data-i18n="settingsAbout">关于 GoT</button>
+          </div>
+          <p class="dialog-hint" id="setVersion"></p>
+        </section>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn primary" id="setClose" data-i18n="close">关闭</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 死活题 -->
+  <dialog class="dialog catalog-dialog" id="problemDialog" aria-labelledby="problemTitle">
+    <form method="dialog">
+      <div class="browse-heading catalog-heading">
+        <h2 id="problemTitle" data-i18n="problemsTitle">死活题 · 古典棋谱</h2>
+        <button type="button" class="btn ghost" id="problemDialogClose" data-i18n="close">关闭</button>
+      </div>
+      <div class="dialog-actions catalog-actions" style="justify-content:flex-start;gap:8px;margin:2px 0 12px">
+        <button type="button" class="btn ghost" id="problemRandom"><span data-i18n="problemsRandom">随机一题</span></button>
+      </div>
+      <p class="dialog-hint problem-dialog-hint catalog-note" data-i18n="problemProgressHint">完成后会记住最好进度；查看正解不会计入完成。</p>
+      <div id="problemDialogBody"></div>
+    </form>
+  </dialog>
+
+  <input type="file" id="fileInput" multiple accept=".sgf,.json,text/plain,application/json" hidden>
+  <input type="file" id="folderInput" webkitdirectory directory multiple accept=".sgf,.SGF,text/plain" hidden>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="text/plain" id="got-ai-worker-src"></script>
-  <script src="js/version.js?v=1.0"></script>
-  <script src="js/goengine.js?v=1.0"></script>
-  <script src="js/gtp.js?v=1.0"></script>
-  <script src="js/board.js?v=1.0"></script>
-  <script src="js/app.js?v=1.0"></script>
+  <script src="js/version.js?v=2.0"></script>
+  <script src="js/goengine.js?v=2.0"></script>
+  <script src="js/gtp.js?v=2.0"></script>
+  <script src="js/board.js?v=2.0"></script>
+  <script src="js/strength.js?v=2.0"></script>
+  <script src="js/clock.js?v=2.0"></script>
+  <script src="problems/problems.js"></script>
+  <script src="js/study-games.js?v=2.0"></script>
+  <script src="records/famous-games.js?v=2.0"></script>
+  <script src="js/study.js?v=2.0"></script>
+  <script src="js/learning.js?v=2.0"></script>
+  <script src="js/growth.js?v=2.0"></script>
+  <script src="js/records.js?v=2.0"></script>
+  <script src="js/home.js?v=2.0"></script>
+  <script src="js/app.js?v=2.0"></script>
 </body>
 </html>
