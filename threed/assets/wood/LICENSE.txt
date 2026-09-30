@@ -1,0 +1,12 @@
+Wood Table 001 — Poly Haven
+Source: https://polyhaven.com/a/wood_table_001
+Photography: Dimitrios Savva. Processing: Rico Cilliers.
+License: CC0 1.0 Universal — https://creativecommons.org/publicdomain/zero/1.0/
+
+color.jpg: wood_table_001_diff_4k.jpg (4096 x 4096)
+roughness.jpg: wood_table_001_rough_2k.jpg (2048 x 2048)
+normal.jpg: wood_table_001_nor_gl_2k.jpg (2048 x 2048)
+
+The runtime adapts color and contrast to the selected finish. Named wood
+finishes are visual interpretations of this photographed grain, not scans
+of each named species. Grid, coordinates and star points are procedural.

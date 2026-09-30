@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1d2126">
+  <meta name="description" content="GoT GUI 隐私政策：说明本地资料、AI 老师请求与删除方式。">
+  <title>GoT · 隐私政策</title>
+  <style>
+    :root{color-scheme:dark;--bg:#171b20;--panel:#20252b;--line:#39414a;--text:#e8e6df;--muted:#a8adb3;--action:#c49a59}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.75 system-ui,"Microsoft YaHei",sans-serif}
+    main{width:min(820px,100% - 32px);margin:36px auto 64px;padding:clamp(22px,5vw,44px);border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+    h1{margin:0 0 8px;font-size:clamp(26px,5vw,38px)}h2{margin:26px 0 6px;font-size:19px;color:var(--action)}p,li{color:#d4d5d6}small,.muted{color:var(--muted)}a{color:#e3bd7c}ul{padding-left:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}header a{white-space:nowrap}
+    .note{margin-top:24px;padding:12px 14px;border:1px solid var(--line);border-radius:6px;color:var(--muted)}.language-note{margin:0 0 20px;font-size:13px}
+  </style>
+</head>
+<body><main>
+  <header><div><small>GOT · PRIVACY</small><h1>隐私政策</h1></div><a href="index.html">返回 GoT</a></header>
+  <p class="muted">适用于 GoT GUI v1.0.0 及其 Alpha 开发版本。本文依据 GoT 代码说明资料处理方式；托管平台和模型服务商各自的处理规则由其决定。</p>
+  <p class="language-note muted">本文目前提供简体中文；其他语言版本尚未完成。</p>
+
+  <h2>浏览器中保存什么</h2>
+  <p>GoT 不要求注册账号，也没有 GoT 云数据库。棋局恢复点、设置、学习进度、死活题进度、课堂记录和老师 API 配置保存在当前网站地址的浏览器本地存储中，不会由 GoT 自动同步到其他设备。普通棋谱可由你导入、导出。</p>
+  <p>API Key 保存在当前标签页的会话存储中；浏览器不支持会话存储时，仅在当前页面内存中保留。关闭标签页后需要重新填写。为降低长期暴露风险，旧版本保存在本地存储中的密钥会在升级后迁移到当前标签页，并从长期存储中移除。任何同源页面脚本在标签页打开期间仍可能访问会话密钥，请只在可信的 GoT 网站使用。</p>
+
+  <h2>使用 AI 老师时会发生什么</h2>
+  <p>读取模型、验证连接或提问时，请求会经 GoT 老师接口发送到你选择的模型服务商。请求可能包含 API Key、模型名称、当前棋盘局面、问题、必要的课堂上下文、对话消息和相关工具结果；老师接口在转发时会接触这些内容。</p>
+  <p>你也可以填写自定义 OpenAI 兼容服务地址。该地址、API Key 和老师请求会由 GoT 老师接口转发至你指定的服务；该服务会按自己的政策处理收到的数据。请只填写你信任的公开 HTTPS 服务地址。</p>
+  <p>GoT 接口代码不把请求正文写入数据库，也不记录密钥或提示词；失败诊断只记录服务商、错误类别和受限错误码。Cloudflare 部署可用 API Key 的 SHA-256 摘要作请求限流标识。托管平台可能处理提供服务所需的网络元数据；GoT 无法确认平台账户级日志的字段和保留期限。模型服务商收到的数据按其政策处理，请在使用前查看其说明。</p>
+  <p>不使用在线老师时，普通对弈和浏览器内置分析在本机浏览器运行；本机版 KataGo 连接你设备上的本地服务。AI 老师需要联网、老师接口和模型服务可用。老师请求不会由 Service Worker 缓存。</p>
+
+  <h2>查看和删除资料</h2>
+  <ul>
+    <li>删除课堂记录：在老师面板的课堂记录中选择“清除课堂记录”。</li>
+    <li>删除 API Key：进入“设置 → 引擎 → 老师 AI API”，删除对应服务商的密钥。</li>
+    <li>删除棋局、设置和学习资料：在浏览器的网站数据设置中清除此网站的站点存储；这通常也会清除会话密钥。也可在老师设置中删除密钥，或关闭对应标签页。</li>
+    <li>“清空缓存并重载”只清除应用离线缓存，不会删除上述本地资料。</li>
+  </ul>
+
+  <p class="note">GoT 无法访问或控制托管平台及模型服务商的日志、备份与数据保留设置。若要了解这些内容，请查看对应服务商的隐私说明。更多使用约定见 <a href="terms.html">使用条款</a>。</p>
+</main></body></html>

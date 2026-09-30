@@ -1,0 +1,2062 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="obsidian">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    (() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('got.settings'));
+        if (saved && ['obsidian', 'paper', 'forest'].includes(saved.theme)) {
+          document.documentElement.dataset.theme = saved.theme;
+        }
+      } catch (_) {}
+    })();
+  </script>
+  <meta name="theme-color" id="themeMeta" content="#1d2126">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="GoT">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="GoT — 专业围棋对弈、复盘与 AI 分析工作台">
+  <link rel="icon" type="image/svg+xml" href="favicon-transparent.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/got-transparent-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>GoT</title>
+  <link rel="stylesheet" href="styles.css?v=v1.0.0">
+  <script type="importmap">
+    {"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}
+  </script>
+</head>
+<body data-workspace="home">
+  <svg class="icon-defs" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 20 20"><path d="m3 9 7-6 7 6v8h-5v-5H8v5H3z"/></symbol>
+    <symbol id="i-new" viewBox="0 0 20 20"><path d="M10 4.4v11.2M4.4 10h11.2"/></symbol>
+    <symbol id="i-open" viewBox="0 0 20 20"><path d="M3.2 6.2 10 3l6.8 3.2v7.6L10 17l-6.8-3.2z"/><path d="M3.2 6.2 10 9.4l6.8-3.2M10 9.4V17"/></symbol>
+    <symbol id="i-save" viewBox="0 0 20 20"><path d="M5 3.4h8.2L16.6 6.8V16.6H5z"/><path d="M7 3.4v4h6M7 16.6v-5h6v5"/></symbol>
+    <symbol id="i-photo" viewBox="0 0 20 20"><path d="M3 6.2h3l1.2-1.8h5.6L14 6.2h3v9.2H3z"/><circle cx="10" cy="10.8" r="3.1"/><path d="M5.1 8h.01"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 20 20"><path d="M7.2 6.3 3.8 9.4l3.4 3.1"/><path d="M4.2 9.4h7.2a4.6 4.6 0 1 1 0 9.2h-1.2"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 20 20"><path d="m12.8 6.3 3.4 3.1-3.4 3.1"/><path d="M15.8 9.4H8.6a4.6 4.6 0 1 0 0 9.2h1.2"/></symbol>
+    <symbol id="i-pass" viewBox="0 0 20 20"><path d="M4 10.5a6 6 0 1 1 1.8 4.3"/><path d="M4 15.4v-4h4"/></symbol>
+    <symbol id="i-resign" viewBox="0 0 20 20"><path d="M10 2.8v7"/><path d="m5.6 6.4 4.4 4.4 4.4-4.4"/><path d="M4 13.2c1.8 2.6 3.8 4 6 4s4.2-1.4 6-4"/></symbol>
+    <symbol id="i-numbers" viewBox="0 0 20 20"><path d="M7.6 3.6 5.7 16.4M14.3 3.6l-1.9 12.8M4 7.5h12.6M3.4 12.5H16"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 20 20"><path d="M3 15.8 7.1 5.2l4.1 8.1 2.5-5.2 3.3 7.7"/></symbol>
+    <symbol id="i-score" viewBox="0 0 20 20"><circle cx="7" cy="7" r="3.4"/><circle cx="13" cy="13" r="3.4"/><path d="m5.2 14.8 9.6-9.6"/></symbol>
+    <symbol id="i-people" viewBox="0 0 20 20"><circle cx="7" cy="6.5" r="2.7"/><circle cx="14" cy="8" r="2.1"/><path d="M2.8 16.5v-1.2a4.2 4.2 0 0 1 4.2-4.2h.1a4.2 4.2 0 0 1 4.2 4.2v1.2M12.3 11.2a3.4 3.4 0 0 1 4.9 3.1v.8"/></symbol>
+    <symbol id="i-engine" viewBox="0 0 20 20"><rect x="3.8" y="6.6" width="12.4" height="8.2" rx="2"/><path d="M10 3.6v3"/><circle cx="7.3" cy="10.1" r="1"/><circle cx="12.7" cy="10.1" r="1"/><path d="M7.6 13.2h4.8"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 20 20"><circle cx="5" cy="5" r="2"/><circle cx="15" cy="10" r="2"/><circle cx="5" cy="15" r="2"/><path d="M7 5h4a2 2 0 0 1 2 2v1M7 15h4a2 2 0 0 0 2-2v-1"/></symbol>
+    <symbol id="i-heat" viewBox="0 0 20 20"><rect x="3.4" y="3.4" width="5.6" height="5.6" rx="1"/><rect x="11" y="3.4" width="5.6" height="5.6" rx="1"/><rect x="3.4" y="11" width="5.6" height="5.6" rx="1"/><rect x="11" y="11" width="5.6" height="5.6" rx="1"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 20 20"><path d="m12.5 4.5-5 5.5 5 5.5"/></symbol>
+    <symbol id="i-next" viewBox="0 0 20 20"><path d="m7.5 4.5 5 5.5-5 5.5"/></symbol>
+    <symbol id="i-first" viewBox="0 0 20 20"><path d="M5.2 4.8v10.4"/><path d="m14.8 4.8-5.4 5.2 5.4 5.2"/></symbol>
+    <symbol id="i-last" viewBox="0 0 20 20"><path d="M14.8 4.8v10.4"/><path d="m5.2 4.8 5.4 5.2-5.4 5.2"/></symbol>
+    <symbol id="i-focus" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.2"/><path d="M10 1.8v2.4M10 15.8v2.4M1.8 10h2.4M15.8 10h2.4"/><circle cx="10" cy="10" r="1.3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 20 20"><path d="m4.5 10.5 3.6 3.6 7.4-8"/></symbol>
+    <symbol id="i-flip" viewBox="0 0 20 20"><path d="M4 7h9.2l-2.6-2.6M16 13H6.8l2.6 2.6"/></symbol>
+    <symbol id="i-confirm" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.6"/><path d="m7 10.3 2.1 2.1 3.9-4.5"/></symbol>
+    <symbol id="i-coords" viewBox="0 0 20 20"><path d="M4.5 4.5h11v11h-11z"/><path d="M4.5 8.2h11M8.2 4.5v11"/></symbol>
+    <symbol id="i-play" viewBox="0 0 20 20"><path d="M7 4.8 15 10l-8 5.2z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 20 20"><path d="M8.35 2.5h3.3l.48 1.93c.48.16.92.42 1.3.75l1.9-.55 1.65 2.86-1.42 1.38c.08.5.08 1.02 0 1.52l1.42 1.38-1.65 2.86-1.9-.55c-.38.33-.82.59-1.3.75l-.48 1.93h-3.3l-.48-1.93a5.2 5.2 0 0 1-1.3-.75l-1.9.55-1.65-2.86 1.42-1.38a4.8 4.8 0 0 1 0-1.52L3.02 7.49l1.65-2.86 1.9.55c.38-.33.82-.59 1.3-.75L8.35 2.5Z"/><circle cx="10" cy="9.63" r="2.15"/></symbol>
+    <symbol id="i-display" viewBox="0 0 20 20"><path d="M4 6h8M16 6h-1.6M4 14h3.4M11 14h6M4 10h12"/><circle cx="13.6" cy="6" r="1.8"/><circle cx="8.8" cy="14" r="1.8"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 20 20"><g fill="currentColor"><rect x="3" y="3" width="3.4" height="3.4" rx="1"/><rect x="8.3" y="3" width="3.4" height="3.4" rx="1"/><rect x="13.6" y="3" width="3.4" height="3.4" rx="1"/><rect x="3" y="8.3" width="3.4" height="3.4" rx="1"/><rect x="8.3" y="8.3" width="3.4" height="3.4" rx="1"/><rect x="13.6" y="8.3" width="3.4" height="3.4" rx="1"/><rect x="3" y="13.6" width="3.4" height="3.4" rx="1"/><rect x="8.3" y="13.6" width="3.4" height="3.4" rx="1"/><rect x="13.6" y="13.6" width="3.4" height="3.4" rx="1"/></g></symbol>
+    <symbol id="i-learn" viewBox="0 0 20 20"><path d="M3.2 4.5h5.4a2 2 0 0 1 1.4.6l.1.1.1-.1a2 2 0 0 1 1.4-.6h5.2v11h-5.2a2 2 0 0 0-1.5.7 2 2 0 0 0-1.5-.7H3.2z"/><path d="M10.1 5.2v10.3"/></symbol>
+    <symbol id="i-more" viewBox="0 0 20 20"><circle cx="4.6" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="10" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.4" cy="10" r="1.3" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-records" viewBox="0 0 20 20"><path d="M4.4 3.4h8.2L15.6 6.4v10.2H4.4z"/><path d="M12.4 3.4v3.2h3.2M7 10h6M7 13h4.4"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 20 20"><rect x="3.2" y="4" width="13.6" height="12" rx="2"/><path d="M12 4v12"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 20 20"><path d="M3 8v4h3l4 3V5L6 8z"/><path d="M13 7.2a4 4 0 0 1 0 5.6M15.5 4.8a7.4 7.4 0 0 1 0 10.4"/></symbol>
+    <symbol id="i-info" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M10 9v4M10 6.5h.01"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 20 20"><rect x="4.5" y="4.5" width="11" height="11" rx="1.5"/></symbol>
+  </svg>
+  <header class="app-header">
+    <a class="brand" href="#" aria-label="GoT">
+      <img class="brand-logo" src="brand.svg" alt="">
+      <span class="brand-name">GO<strong>T</strong><em data-i18n="brandSub">围棋</em></span>
+  <span class="version-label" id="appVersionLabel" title="Application version">v1.0.0</span>
+    </a>
+    <button class="mobile-review-return" id="mobileReviewReturnBtn" type="button" hidden>
+      <svg aria-hidden="true"><use href="#i-prev"></use></svg><span>返回棋谱</span>
+    </button>
+    <!-- 四个主分区：首页 / 对弈 / 学习 / 复盘；棋谱浏览作为复盘子入口 -->
+    <nav class="workspace-switch" aria-label="工作区" data-i18n-aria="workspaceNav">
+      <button class="tool-button nav-primary" id="homeWorkspaceBtn" type="button" aria-pressed="false" data-i18n-aria="homeWorkspace"><svg><use href="#i-home"></use></svg><span data-i18n="homeWorkspace">首页</span></button>
+      <div class="nav-group" data-nav-section="play">
+        <button class="tool-button nav-primary" id="playWorkspaceBtn" type="button" aria-pressed="true" data-i18n-aria="playWorkspace"><svg><use href="#i-coords"></use></svg><span data-i18n="playWorkspace">对弈</span></button>
+        <div class="nav-children">
+          <button class="tool-button nav-sub" id="playNewGameBtn" type="button" data-i18n-title="newGame" data-i18n-aria="newGame">
+            <svg><use href="#i-new"></use></svg><span data-i18n="newGame">新建对局</span>
+          </button>
+          <button class="tool-button nav-sub" id="playLocalBtn" type="button" data-i18n-title="playLocalTitle" data-i18n-aria="playLocalTitle">
+            <svg><use href="#i-people"></use></svg><span data-i18n="playLocalTitle">本地双人</span>
+          </button>
+        </div>
+      </div>
+      <div class="nav-group" data-nav-section="learn">
+        <button class="tool-button nav-primary" id="learnWorkspaceBtn" type="button" aria-pressed="false" data-i18n-title="learnWorkspaceTitle" aria-label="学习">
+          <svg><use href="#i-learn"></use></svg><span data-i18n="learnWorkspace">学习</span>
+        </button>
+        <div class="nav-children">
+          <button class="tool-button nav-sub" id="problemBtn" type="button" data-i18n-title="problems" data-i18n-aria="problems">
+            <svg><use href="#i-puzzle"></use></svg><span data-i18n="problems">死活题</span>
+          </button>
+        </div>
+      </div>
+      <div class="nav-group" data-nav-section="review">
+        <button class="tool-button nav-primary" id="reviewWorkspaceBtn" type="button" aria-pressed="false" data-i18n-title="reviewWorkspace" data-i18n-aria="reviewWorkspace">
+          <svg><use href="#i-tree"></use></svg><span data-i18n="reviewWorkspace">复盘</span>
+        </button>
+        <div class="nav-children">
+          <button class="tool-button nav-sub" id="openBtn" type="button" aria-pressed="false" data-i18n-title="recordLibrary" data-i18n-aria="recordLibrary">
+            <svg><use href="#i-records"></use></svg><span data-i18n="recordLibrary">棋谱</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+    <!-- DOM 顺序 = 视觉顺序（侧栏自上而下）：品牌 → 导航 → 对局工具 → 设置 → 引擎状态/语言 → 座右铭 -->
+    <div class="sidebar-utilities">
+    <button class="tool-button sidebar-control" id="shellSettingsBtn" type="button" aria-pressed="false" aria-label="设置" data-i18n-aria="shellSettings"><svg><use href="#i-settings"></use></svg><span data-i18n="shellSettings">设置</span></button>
+    <button class="tool-button sidebar-control" id="languageToggle" type="button" aria-label="切换语言"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><ellipse cx="10" cy="10" rx="3" ry="7"/><path d="M3 10h14"/></svg><span id="languageToggleText">English</span></button>
+    <div class="header-status">
+      <span class="engine-pill" id="enginePill">
+        <i class="status-dot" id="engineDot" aria-hidden="true"></i>
+        <span id="enginePillText" data-i18n="engineOff">内置引擎</span>
+      </span>
+    </div>
+    </div>
+    <p class="sidebar-motto">GOT<br>YOUR GO<br>FURTHER</p>
+  </header>
+
+  <section id="homeWorkspace" class="home-workspace" aria-label="首页">
+    <div class="home-heading">
+      <div><p class="home-date" id="homeDate"></p><h1 id="homeGreeting">每一手，都向前。</h1></div>
+    </div>
+    <div class="home-grid">
+      <article class="home-main home-surface"><div class="home-card-heading"><div><h2 id="homeGameTitle">开启一盘新棋</h2><p id="homeGameMeta">19 路棋盘</p></div><span class="home-session" id="homeSession">本次会话</span></div><div class="home-board-stage" id="homeBoardStage"><canvas id="homeBoard" aria-label="当前棋局预览"></canvas></div><button class="home-primary" id="homePlay" type="button">开始对局 →</button><button class="home-text-button" id="homeImport" type="button">或导入 SGF 棋谱</button></article>
+      <div class="home-aside">
+        <article class="home-surface home-task"><div class="home-card-heading"><h2 id="homeProblemTitle">今日一题</h2><button class="home-text-button" id="homeShuffle" type="button">换一题</button></div><div class="home-task-body"><div id="homeProblemBoard" class="home-mini-board"></div><div><h3 id="homeProblemName">读清局部，找到应手</h3><p id="homeProblemMeta">围棋死活练习</p><button class="home-secondary" id="homeProblemStart" type="button">开始练习</button></div></div></article>
+        <article class="home-surface home-task"><h2 id="homeCourseTitle">每日练习足迹</h2><p id="homeCourseDesc">每一点积累，都算数。</p><div class="home-course-track" aria-hidden="true"><span></span><span></span><span></span><span></span></div><button class="home-secondary" id="homeCourse" type="button">今日打卡</button></article>
+        <article class="home-surface home-task"><h2 id="homeLibraryTitle">在名局中，遇见好棋</h2><p id="homeLibraryDesc">完整棋谱 · 逐手阅读与猜着练习</p><button class="home-secondary" id="homeLibrary" type="button">打开名局棋谱 →</button></article>
+      </div>
+      <section class="home-progress home-surface" aria-label="学习进度"><div><h2 id="homeProgressTitle">你的学习足迹</h2><p id="homeProgressNote">累计进度，点滴向前</p></div><div id="homeStats" class="home-stats"></div><button class="home-text-button" id="homePractice" type="button">针对练习 →</button></section>
+    </div>
+  </section>
+  <main class="workbench" hidden>
+    <!-- 中栏：棋盘 -->
+    <section class="board-column" id="boardColumn" aria-label="棋盘" data-i18n-aria="boardLabel">
+      <!-- 侧面板收起后：棋盘右缘的恢复入口，桌面宽屏可把视觉中心完全让给棋盘 -->
+      <button class="tool-button inspector-show" id="inspectorShowBtn" type="button" hidden data-i18n-title="inspectorShow" data-i18n-aria="inspectorShow">
+        <svg><use href="#i-prev"></use></svg><span data-i18n="inspectorShow">分析面板</span>
+      </button>
+      <!-- 复盘「练习」模式提示条：说明执色、目标与退出入口，避免切工作区后不明所以 -->
+      <div class="practice-strip hidden" id="practiceStrip" role="status" aria-live="polite">
+        <i class="ps-stone" id="practiceStone" aria-hidden="true"></i>
+        <b data-i18n="practiceActive">练习中</b>
+        <span id="practiceColor"></span>
+        <span id="practiceTarget"></span>
+        <span id="practiceResult"></span>
+        <button class="tool-button ps-exit" id="practiceRetryBtn" type="button" hidden><span data-i18n="practiceRetry">重来</span></button>
+        <button class="tool-button ps-exit" id="practiceNextBtn" type="button" hidden>下一个转折</button>
+        <button class="tool-button ps-exit" id="practiceExitBtn" type="button"><span data-i18n="practiceExit">结束练习</span></button>
+      </div>
+      <div class="board-stage" id="boardStage">
+        <canvas id="boardCanvas" aria-label="围棋棋盘" data-i18n-aria="boardCanvasAria"></canvas>
+        <div class="board-quick-controls" id="boardQuickControls" hidden>
+          <label class="board-quick-choice"><span data-i18n="board25dFinishMode">盘面材质</span>
+            <select id="boardQuickFinish" aria-label="盘面材质" data-i18n-aria="board25dFinishMode"><option value="kaya" data-i18n="finishKaya">榧木</option><option value="maple" data-i18n="finishMaple">枫木</option><option value="walnut" data-i18n="finishWalnut">胡桃木</option><option value="rosewood" data-i18n="finishRosewood">花梨木</option><option value="bamboo" data-i18n="finishBamboo">竹纹</option><option value="slate" data-i18n="finishSlate">青石</option><option value="walnut-pbr" data-i18n="finishWalnutPbr">胡桃实纹</option><option value="oak-pbr" data-i18n="finishOakPbr">浅橡木</option><option value="stone-pbr" data-i18n="finishStonePbr">岩层青石</option></select>
+          </label>
+          <div class="board-quick-pair">
+            <label><span data-i18n="board25dToneMode">色调</span><select id="boardQuickTone" aria-label="盘面色调" data-i18n-aria="board25dToneMode"><option value="natural" data-i18n="toneNatural">原色</option><option value="light" data-i18n="toneLight">浅色</option><option value="deep" data-i18n="toneDeep">深色</option></select></label>
+            <label><span data-i18n="board25dGlossMode">光泽</span><select id="boardQuickGloss" aria-label="表面光泽" data-i18n-aria="board25dGlossMode"><option value="matte" data-i18n="glossMatte">哑光</option><option value="satin" data-i18n="glossSatin">缎面</option><option value="polished" data-i18n="glossPolished">抛光</option></select></label>
+          </div>
+          <div class="board-quick-pair">
+            <label><span data-i18n="board25dStoneMaterialMode">棋子材质</span><select id="boardQuickStoneMaterial" aria-label="棋子材质" data-i18n-aria="board25dStoneMaterialMode"><option value="yunzi" data-i18n="stoneMaterialYunzi">温润云子</option><option value="premium-yunzi" data-i18n="stoneMaterialPremium">高阶云子</option></select></label>
+            <label><span data-i18n="board25dStoneMode">形状</span><select id="boardQuickStoneShape" aria-label="棋子形状" data-i18n-aria="board25dStoneMode"><option value="single" data-i18n="stoneSingle">单凸云子</option><option value="double" data-i18n="stoneDouble">双凸云子</option></select></label>
+          </div>
+<label class="board-quick-choice"><span data-i18n="board25dBackground">场景背景</span><select id="boardQuickBackground" aria-label="场景背景" data-i18n-aria="board25dBackground"><option value="dark" data-i18n="sceneDark">墨色静境</option><option value="wood" data-i18n="sceneWood">木案清谈</option><option value="tatami" data-i18n="sceneTatami">和室草席</option><option value="stone" data-i18n="sceneStone">庭院石台</option></select></label>
+          <label class="board-angle-control" id="boardAngleControl">
+            <span data-i18n="board25dCameraAngle">视角</span>
+            <output id="boardAngleOverlayValue" for="boardAngleOverlay">54°</output>
+            <input id="boardAngleOverlay" type="range" min="0" max="60" step="1" value="54" aria-label="调整棋盘视角" data-i18n-aria="board25dCameraAngle">
+          </label>
+        </div>
+        <div class="preview-badge" id="previewBadge" hidden data-i18n="previewing">预览中</div>
+      </div>
+      <!-- 合并工具栏：核心操作（形势/点目/分析）· 棋谱导航 · 更多菜单（低频功能） -->
+      <div class="tool-rail" role="toolbar" aria-label="对局控制" data-i18n-aria="gameToolbar">
+        <div class="move-confirmation" id="moveConfirmation" hidden>
+          <span id="pendingCoordinate" role="status" aria-live="polite"></span>
+          <div class="move-adjust" id="moveAdjust" role="group" aria-label="微调落点">
+            <button type="button" data-adjust="-1,0" aria-label="左移一格">←</button><button type="button" data-adjust="0,-1" aria-label="上移一格">↑</button><button type="button" data-adjust="0,1" aria-label="下移一格">↓</button><button type="button" data-adjust="1,0" aria-label="右移一格">→</button>
+          </div>
+          <button class="btn primary" id="commitMoveBtn" type="button" data-i18n="commitMove">确认落子</button>
+          <button class="btn ghost" id="cancelMoveBtn" type="button" data-i18n="cancel">取消</button>
+        </div>
+        <div class="rail-core" role="group" aria-label="核心操作" data-i18n-aria="coreActions">
+          <button class="tool-button toggle" id="ownershipBtn" type="button" aria-pressed="false" data-i18n-title="ownership" aria-label="形势">
+            <svg><use href="#i-heat"></use></svg><span data-i18n="ownership">形势</span>
+          </button>
+          <button class="tool-button toggle" id="scoreBtn" type="button" aria-pressed="false" data-i18n-title="scoreMode" aria-label="点目">
+            <svg><use href="#i-score"></use></svg><span data-i18n="scoreMode">点目</span>
+          </button>
+          <div class="score-strip hidden" id="scoreStrip" role="region" aria-label="点目" data-i18n-aria="scoreModeAria">
+            <div class="ss-score">
+              <i class="mini-stone black" aria-hidden="true"></i><b id="stripBlack">0</b>
+              <span class="ss-vs">vs</span>
+              <b id="stripWhite">0</b><i class="mini-stone white" aria-hidden="true"></i>
+            </div>
+            <div class="ss-hint" id="stripHint" data-i18n="scoreStripHint">点击棋子标记死子</div>
+            <div class="ss-actions">
+              <button class="tool-button" id="scoreCancelBtn" type="button" data-i18n="cancel">取消</button>
+              <button class="tool-button" id="scoreDoneBtn" type="button"><span data-i18n="confirmScore">确认</span></button>
+            </div>
+          </div>
+          <button class="tool-button toggle" id="railAnalysisBtn" type="button" aria-pressed="false" data-i18n-title="analysis" data-i18n-aria="analysis">
+            <svg><use href="#i-chart"></use></svg><span data-i18n="analysis">分析</span>
+          </button>
+          <button class="tool-button primary" id="resumePlayBtn" type="button" hidden data-i18n="resumeHere">从此处续弈</button>
+        </div>
+        <div class="nav-cluster" role="group" aria-label="手数导航" data-i18n-aria="moveNav">
+          <button class="tool-button icon-btn" id="firstMoveBtn" type="button" data-i18n-title="firstMove" aria-label="首手">
+            <svg><use href="#i-first"></use></svg>
+          </button>
+          <button class="tool-button icon-btn" id="previousMoveBtn" type="button" data-i18n-title="previousMove" aria-label="上一手">
+            <svg><use href="#i-prev"></use></svg>
+          </button>
+          <span id="timelinePosition" class="timeline-position">0 / 0</span>
+          <button class="tool-button icon-btn" id="nextMoveBtn" type="button" data-i18n-title="nextMove" aria-label="下一手">
+            <svg><use href="#i-next"></use></svg>
+          </button>
+          <button class="tool-button icon-btn" id="lastMoveBtn" type="button" data-i18n-title="lastMoveNav" aria-label="末手">
+            <svg><use href="#i-last"></use></svg>
+          </button>
+        </div>
+        <div class="rail-more" id="railMore">
+          <button class="tool-button rail-more-toggle" id="boardMoreBtn" type="button" aria-expanded="false" aria-controls="railMoreMenu" data-i18n-title="moreMenu" data-i18n-aria="moreMenu">
+            <svg><use href="#i-more"></use></svg><span data-i18n="moreMenu">更多</span>
+          </button>
+          <div class="rail-more-menu" id="railMoreMenu">
+            <button class="tool-button" id="passBtn" type="button" data-i18n-title="pass">
+              <svg><use href="#i-pass"></use></svg><span data-i18n="pass">停着</span>
+            </button>
+            <button class="tool-button danger-btn" id="resignBtn" type="button" data-i18n-title="resign">
+              <svg><use href="#i-resign"></use></svg><span data-i18n="resign">认输</span>
+            </button>
+            <button class="tool-button" id="displaySettingsBtn" type="button" data-i18n-title="displayOptions" aria-label="棋盘设置">
+              <svg><use href="#i-display"></use></svg><span data-i18n="displayOptions">棋盘设置</span>
+            </button>
+            <button class="tool-button" id="boardPhotoBtn" type="button" data-i18n-title="boardPhotoExport">
+              <svg aria-hidden="true"><use href="#i-photo"></use></svg><span data-i18n="boardPhotoExport">导出棋盘 PNG</span>
+            </button>
+            <button class="tool-button" id="fullscreenBtn" type="button" aria-pressed="false"><svg><use href="#i-focus"></use></svg><span id="fullscreenLabel" data-i18n="fullscreenBoard">全屏棋盘</span></button>
+            <button class="tool-button" id="boardZoomBtn" type="button" aria-pressed="false"><svg><use href="#i-focus"></use></svg><span id="boardZoomLabel" data-i18n="zoomBoard">放大棋盘</span></button>
+          </div>
+        </div>
+        <button class="tool-button mobile-panel-toggle" id="mobilePanelBtn" type="button" aria-expanded="false" aria-controls="inspectorPanel"><svg><use href="#i-panel"></use></svg><span id="mobilePanelLabel">分析与棋谱树</span></button>
+        <span id="boardZoomHint" class="board-zoom-hint" hidden data-i18n="zoomBoardHint">拖动看局部 · 轻点选落点</span>
+      </div>
+      <section class="evalgraph-section" aria-label="胜率曲线" data-i18n-aria="evalGraphAria">
+        <div class="section-heading"><span data-i18n="evalGraph">胜率曲线</span><span class="graph-legend" data-i18n="graphLegend">黑方胜率 · 目差 ±15</span></div>
+        <canvas id="evalGraph" height="72"></canvas>
+      </section>
+    </section>
+
+    <!-- 右栏：棋手 / 分析 / 棋谱树 -->
+    <aside class="analysis-column" id="inspectorPanel" aria-label="棋手与分析" data-i18n-aria="analysisColumn">
+    <button class="tool-button mobile-panel-close" id="mobilePanelClose" type="button" data-i18n="backToBoard">返回棋盘</button>
+    <div class="inspector-top-actions">
+      <button class="tool-button toggle inspector-view-toggle" id="boardViewToggle" type="button" aria-pressed="false" data-i18n-title="boardView25d"><svg aria-hidden="true"><use href="#i-open"></use></svg><span id="boardViewToggleLabel" data-i18n="boardView25d">3D 棋盘</span></button>
+      <button class="tool-button inspector-collapse" id="inspectorCollapseBtn" type="button" data-i18n-title="inspectorCollapse" data-i18n-aria="inspectorCollapse"><svg><use href="#i-next"></use></svg><span data-i18n="inspectorCollapse">收起面板</span></button>
+    </div>
+    <div class="task-context" id="taskContext" data-flow="play">
+      <div class="task-context-header">
+        <div class="task-context-copy">
+          <div class="task-context-kicker" id="taskContextKicker" data-i18n="livePosition">实时局面</div>
+          <strong id="taskContextTitle"></strong>
+        </div>
+        <button class="btn ghost" id="reviewReturnBtn" type="button" data-i18n="browseRecords">浏览棋谱</button>
+      </div>
+      <span id="taskContextState" role="status" aria-live="polite"></span>
+      <p class="task-context-hint" id="taskContextHint"></p>
+    </div>
+    <div class="game-actions">
+      <button class="tool-button" id="newGameBtn" type="button" data-i18n-title="newGame" aria-label="新对局">
+        <svg><use href="#i-new"></use></svg><span data-i18n="newGame">新对局</span>
+      </button>
+
+      <button class="tool-button" id="saveBtn" type="button" data-i18n-title="saveSgf" aria-label="保存棋谱">
+        <svg><use href="#i-save"></use></svg><span data-i18n="exportRecord">保存</span>
+      </button>
+      <button class="tool-button" id="studioBtn" type="button"><svg><use href="#i-puzzle"></use></svg><span>编创讲义</span></button>
+    </div>
+
+      <section id="aiMatchControls" class="ai-match-controls" hidden>
+        <strong id="aiMatchStatus" role="status"></strong>
+        <div class="studio-tools"><button type="button" class="btn" id="aiMatchToggle">暂停对弈</button><button type="button" class="btn" id="aiMatchStep">只走一手</button></div>
+        <p id="aiMatchHint"></p>
+      </section>
+      <section class="problem-banner hidden" id="problemBanner" aria-label="死活题" data-i18n-aria="problems">
+        <button class="tool-button" id="problemChoose" type="button"><svg><use href="#i-puzzle"></use></svg><span data-i18n="chooseProblem">选择题目</span></button>
+        <div class="pb-info"><strong id="problemSetName">—</strong><span id="problemNo">—</span></div>
+        <div class="pb-details"><span id="problemLevel">—</span><span id="problemTurn">—</span></div>
+        <div class="problem-progress-block" aria-live="polite">
+          <div class="problem-progress-head"><span data-i18n="problemProgress">本题进度</span><strong id="problemProgressValue">0 / 0</strong></div>
+          <div class="problem-progress-track" id="problemProgressTrack" role="progressbar" data-i18n-aria="problemProgress" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 / 0"><i id="problemProgressBar"></i></div>
+          <div class="problem-progress-meta"><span id="problemSetProgress">本集完成 0 / 0 · 看过 0</span><span id="problemCompletion" class="problem-completion" hidden></span></div>
+        </div>
+        <p class="dialog-hint" data-i18n="problemInstructions">请依次走出双方的正确应对。</p>
+        <div class="problem-status" id="problemStatus" role="status" aria-live="polite"></div>
+        <div class="pb-actions">
+          <button class="tool-button" id="problemHint" type="button" data-i18n="problemsHint">提示</button>
+          <button class="tool-button" id="problemReset" type="button" data-i18n="problemsReset">重试</button>
+          <button class="tool-button" id="problemSolution" type="button" data-i18n="problemsSolution">查看正解</button>
+        </div>
+        <div class="pb-navigation">
+          <button class="tool-button" id="problemPrev" type="button" data-i18n="problemsPrev">上一题</button>
+          <button class="tool-button" id="problemNext" type="button" data-i18n="problemsNext">下一题</button>
+        </div>
+        <div class="pb-footer">
+          <button class="tool-button" id="problemExit" type="button" data-i18n="problemsExit">返回棋局</button>
+        </div>
+      </section>
+      <section class="got-tutor-panel" id="gotTutorPanel" hidden aria-label="GoT AI 老师">
+        <div class="got-tutor-head">
+          <div class="tutor-identity">
+            <div class="tutor-heading-line">
+              <h2 id="tutorTitle">AI 老师</h2>
+              <button class="tool-button tutor-save" id="tutorSaveConversation" type="button" hidden>保存课堂</button>
+            </div>
+            <div class="tutor-meta-line">
+              <p class="tutor-model-line"><span id="tutorModelName">deepseek-v4.1-flash</span><span aria-hidden="true"> · </span><span id="tutorProviderName">OpenCode Go</span></p>
+              <span class="tutor-meta-separator" aria-hidden="true">·</span>
+              <p class="tutor-connection-state" id="tutorConnectionState" role="status"></p>
+              <div class="tutor-wait" id="tutorWait" hidden aria-busy="false">
+                <span class="tutor-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <strong id="tutorWaitTitle" role="status" aria-live="polite"></strong><span id="tutorWaitTime" aria-hidden="true"></span>
+                <p id="tutorWaitDetail"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tutor-review-controls"><button class="tool-button" id="tutorUndo" data-i18n="tutorUndo" type="button">撤回我的上一手</button><button class="tool-button" id="tutorReturn" data-i18n="tutorReturn" type="button" hidden>返回课堂继续</button></div>
+        <div class="got-tutor-progress"><span id="tutorProgressLabel">第 1 步</span><i><b id="tutorProgressBar"></b></i></div>
+        <small id="tutorSource" class="tutor-legacy-copy">课堂提示 · 本地规则</small><p id="tutorSpeech" class="tutor-legacy-copy" aria-hidden="true"></p>
+        <div id="tutorTranscript" class="tutor-transcript" role="log" tabindex="0" aria-label="与 AI 老师的对话" aria-live="polite"></div>
+        <button class="tool-button tutor-latest" id="tutorLatest" type="button" hidden>回到最新</button>
+        <div class="tutor-mark-key"><span id="tutorMarksLegend"></span><button class="tool-button" id="tutorClearMarks" type="button" hidden>清除标注</button></div>
+        <div class="got-tutor-actions"><button class="btn ghost" id="tutorHint" type="button" hidden>给我提示</button><button class="btn primary" id="tutorContinue" type="button">继续</button></div>
+        <div class="got-tutor-options" id="tutorOptions"></div>
+        <p id="tutorEngineStatus" role="status"></p>
+        <button class="btn ghost" id="tutorRetryEngine" type="button" hidden>重试引擎应手</button>
+        <form id="tutorQuestionForm" class="tutor-question-form">
+          <label class="tutor-sr-only" for="tutorQuestion">问问老师</label>
+          <textarea id="tutorQuestion" rows="2" maxlength="2000" placeholder="问问老师，或追问刚才这手…"></textarea>
+          <div class="tutor-composer-actions"><button class="btn ghost" id="tutorRetryExplanation" type="button" hidden>重试讲解</button><button class="btn ghost" id="tutorStop" type="button" hidden>停止讲解</button><button class="btn ghost tutor-auto-reply" id="tutorAutoReply" type="button" aria-pressed="false" data-i18n="tutorAutoReply">自动回复</button><button class="btn primary" id="tutorSend" type="submit">讲解当前</button></div>
+        </form>
+        <small id="tutorStatus" role="status"></small>
+        <details id="tutorHistory" class="tutor-history">
+          <summary>已保存的课堂</summary>
+          <label for="tutorHistorySelect">查看已保存的课堂</label>
+          <select id="tutorHistorySelect"></select>
+        </details>
+      </section>
+      <header class="match-header" aria-label="棋手信息" data-i18n-aria="matchInfo">
+        <div class="player-card" id="blackCard">
+          <span class="player-stone black" aria-hidden="true"></span>
+          <div class="player-meta">
+            <strong id="blackName" data-i18n="black">黑方</strong>
+            <span id="blackRank">?</span>
+          </div>
+          <div class="player-right">
+            <b class="captures" id="blackCaptures">0</b>
+            <span class="captures-label" data-i18n="captures">提子</span>
+            <b class="clock" id="clockBlack" hidden></b>
+          </div>
+          <span class="thinking-dot" id="blackThinking" hidden><i></i><i></i><i></i></span>
+        </div>
+        <div class="player-card" id="whiteCard">
+          <span class="player-stone white" aria-hidden="true"></span>
+          <div class="player-meta">
+            <strong id="whiteName" data-i18n="white">白方</strong>
+            <span id="whiteRank">?</span>
+          </div>
+          <div class="player-right">
+            <b class="captures" id="whiteCaptures">0</b>
+            <span class="captures-label" data-i18n="captures">提子</span>
+            <b class="clock" id="clockWhite" hidden></b>
+          </div>
+          <span class="thinking-dot" id="whiteThinking" hidden><i></i><i></i><i></i></span>
+        </div>
+      </header>
+      <div class="match-meta-row">
+        <div class="info-card" role="group" aria-label="对局信息" data-i18n-aria="gameInfo">
+          <span class="meta-strong" id="infoRule">中国规则</span>
+          <span class="meta-item" id="infoKomiItem"><span class="meta-sep" aria-hidden="true"></span><span data-i18n="komi">贴目</span><b id="infoKomi">7.5</b></span>
+          <span class="meta-item" id="infoHandicapItem" hidden><span class="meta-sep" aria-hidden="true"></span><span data-i18n="handicap">让子</span><b id="infoHandicap">0</b></span>
+          <span class="meta-item"><span class="meta-sep" aria-hidden="true"></span><span data-i18n="moveCount">手数</span><b id="infoMoves">0</b></span>
+          <span class="meta-item" id="infoResultItem" hidden><span class="meta-sep" aria-hidden="true"></span><span data-i18n="result">结果</span><b id="infoResult">—</b></span>
+        </div>
+      </div>
+
+      <section class="game-result-panel" id="gameResultPanel" hidden role="status" aria-live="polite">
+        <div class="result-heading"><span class="result-mark" aria-hidden="true">✓</span><strong data-i18n="gameOver">对局结束</strong><b id="gameResultText">—</b></div>
+        <p id="gameResultHint"></p>
+        <div class="result-actions">
+          <button class="btn primary" id="resultNewGameBtn" type="button" data-i18n="newGame">新对局</button>
+          <button class="btn ghost" id="resultReviewBtn" type="button" data-i18n="reviewWorkspace">复盘</button>
+        </div>
+      </section>
+
+      <div class="tabs" role="tablist" aria-label="分析面板" data-i18n-aria="analysisTabs">
+        <button class="tab" id="tabAnalysis" role="tab" aria-controls="pageAnalysis" aria-selected="false" data-i18n="tabAnalysis">AI 分析</button>
+        <button class="tab" id="tabReviewTraining" role="tab" aria-controls="pageReview" aria-selected="false" data-i18n="reviewSection" hidden>复盘训练</button>
+        <button class="tab" id="tabTutor" role="tab" aria-controls="gotTutorPanel" aria-selected="false" data-i18n="tabTutor">AI 讲解</button>
+        <button class="tab selected" id="tabTree" role="tab" aria-controls="pageTree" aria-selected="true" data-i18n="tabTree">棋谱树</button>
+      </div>
+
+      <div class="tab-page hidden" id="pageAnalysis" role="tabpanel" aria-labelledby="tabAnalysis">
+        <div class="analysis-controls">
+          <button class="tool-button analysis-start-action toggle" id="analysisBtn" type="button" aria-pressed="false" data-i18n-title="analysis" aria-label="分析">
+            <svg><use href="#i-chart"></use></svg><span id="analysisAction">分析</span>
+          </button>
+        </div>
+        <div class="analysis-state" id="analysisState" role="status" aria-live="polite"></div>
+        <label class="strength-quick" id="strengthQuick" hidden><span data-i18n="opponentStrength">对手棋力</span>
+          <select id="quickStrength" data-i18n-aria="opponentStrength"></select>
+        </label>
+        <p class="analysis-intro" id="analysisIntro" data-i18n="analysisIntro">直接在棋盘上落子开始对局。需要参考时，可开启 AI 分析。</p>
+        <div class="analysis-empty-state" id="analysisEmptyState" hidden>
+          <span class="analysis-empty-mark" aria-hidden="true"><svg><use href="#i-chart"></use></svg></span>
+          <div><strong data-i18n="analysisEmptyTitle">分析从这里开始</strong><p data-i18n="analysisEmptyBody">当前局面还没有分析结果。开启 AI 分析后，候选着法、胜率和形势会显示在这里。</p></div>
+        </div>
+        <div class="analysis-tools hidden" id="analysisTools">
+          <button class="tool-button" id="deepenBtn" type="button"><svg><use href="#i-chart"></use></svg><span data-i18n="deepen">加深分析</span></button>
+          <button class="tool-button toggle" id="analyzeMoveBtn" type="button" aria-pressed="false"><svg><use href="#i-focus"></use></svg><span data-i18n="analyzeMove">指定着点</span></button>
+          <button class="tool-button" id="equalizeBtn" type="button"><svg><use href="#i-coords"></use></svg><span data-i18n="equalize">等量比较</span></button>
+        </div>
+        <details class="move-coach" id="moveCoach" hidden>
+          <summary id="coachSummary">逐手学习</summary>
+          <div id="coachText" role="status" aria-live="polite"></div>
+          <div class="coach-actions"><button type="button" class="btn ghost" id="coachRetry">重看这一手</button><button type="button" class="btn ghost" id="coachLesson">练习相关方法</button></div>
+        </details>
+      <div class="lastmove-card" id="lastMoveCard">
+        <div class="card-heading">
+          <span data-i18n="lastMove">上一手</span>
+          <b id="lastMoveCoord">—</b>
+        </div>
+        <div class="quality-row">
+          <span class="quality-tag neutral" id="lastMoveQuality">—</span>
+          <span class="quality-delta" id="lastMoveDelta"></span>
+        </div>
+      </div>
+
+
+        <section class="winrate-section">
+          <div class="winrate-bar" id="winrateBar" role="img" aria-label="胜率" data-i18n-aria="winrateAria">
+            <div class="winrate-fill black" id="winrateFill"></div>
+            <span class="winrate-label left" id="winrateBlackLabel">—</span>
+            <span class="winrate-label right" id="winrateWhiteLabel">—</span>
+          </div>
+          <div class="score-row">
+            <span data-i18n="scoreLead">形势判断</span>
+            <b id="scoreLead">—</b>
+            <span class="engine-meta" id="engineMeta"></span>
+          </div>
+        </section>
+
+        <section class="candidates-section">
+          <div class="section-heading">
+            <span data-i18n="candidates">候选着法</span>
+            <span class="heading-tools">
+              <span class="engine-meta" id="candMeta"></span>
+              <button class="mode-switch" id="autoPreviewBtn" type="button" aria-pressed="false" data-i18n-title="autoPreview"><span data-i18n="autoPreview">自动推演</span></button>
+            </span>
+          </div>
+          <div class="candidate-list" id="candidateList" role="listbox" aria-label="候选着法" data-i18n-aria="candidateAria"></div>
+          <p class="cand-empty" id="candEmpty" hidden data-i18n="candEmptyHint">开启「分析」或等待 AI 计算，即可查看候选着法与胜率</p>
+          <p class="pv-line" id="pvLine" data-i18n-title="pvTitle"></p>
+        </section>
+
+      </div>
+
+      <div class="tab-page hidden" id="pageReview" role="tabpanel" aria-labelledby="tabReviewTraining">
+        <section class="review-section">
+        <div class="review-actions-card">
+          <div class="review-primary-row">
+            <div class="review-run-controls">
+              <button class="tool-button primary" id="reviewStartBtn" type="button">
+                <svg><use href="#i-chart"></use></svg><span data-i18n="runReview">AI 复盘</span>
+              </button>
+              <button class="tool-button hidden" id="reviewStopBtn" type="button">
+                <svg><use href="#i-stop"></use></svg><span data-i18n="stopReview">停止</span>
+              </button>
+            </div>
+            <label class="review-depth" for="reviewDepthSelect" data-i18n-title="reviewDepthHint">
+              <span data-i18n="reviewDepth">深度</span>
+              <select id="reviewDepthSelect">
+                <option value="quick" data-i18n="reviewDepthQuick">快速</option>
+                <option value="standard" data-i18n="reviewDepthStandard">标准</option>
+                <option value="deep" data-i18n="reviewDepthDeep">深度</option>
+              </select>
+            </label>
+          </div>
+          <div class="review-navigation-row">
+            <button class="tool-button toggle" id="autoplayBtn" type="button" aria-pressed="false" data-i18n-title="autoplay" aria-label="播放">
+              <svg><use href="#i-play"></use></svg>
+            </button>
+            <button class="tool-button" id="prevBlunderBtn" type="button" data-i18n-title="prevBlunder" aria-label="上一失误">
+              <svg><use href="#i-prev"></use></svg>
+            </button>
+            <button class="tool-button" id="nextBlunderBtn" type="button" data-i18n-title="nextBlunder" aria-label="下一失误">
+              <svg><use href="#i-next"></use></svg>
+            </button>
+          </div>
+          <span class="review-progress-text" id="reviewProgress" role="status" aria-live="polite"></span>
+        </div>
+        <div class="review-progress"><i id="reviewBar"></i></div>
+        <div class="review-summary" id="reviewSummary" hidden></div>
+        <div class="review-focus" id="reviewFocus" hidden></div>
+        <div class="review-table-wrap">
+          <table class="review-table" id="reviewTable" aria-label="每手评测" data-i18n-aria="reviewTableAria"></table>
+        </div>
+        </section>
+      </div>
+
+      <div class="tab-page" id="pageTree" role="tabpanel" aria-labelledby="tabTree">
+        <div class="tree-toolbar">
+          <button class="tool-button" id="treeBackBtn" type="button" hidden><span data-i18n="treeBackVariation">返回上一支路</span></button>
+          <button class="tool-button" id="treeMainBtn" type="button"><svg><use href="#i-tree"></use></svg><span data-i18n="backMain">回到主线</span></button>
+        </div>
+        <nav class="tree-breadcrumb" id="treeBreadcrumb" aria-label="变化路径" data-i18n-aria="treeBreadcrumbLabel"></nav>
+        <div class="game-tree" id="gameTree" role="region" aria-label="棋谱树" data-i18n-aria="gameTreeAria"></div>
+        <div class="comment-box">
+          <label for="commentBox" data-i18n="commentLabel">备注</label>
+          <textarea id="commentBox" rows="3" spellcheck="false" data-i18n-placeholder="commentPlaceholder"></textarea>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 学习工作区：与对局、复盘、死活题并列；进入时由 js/learning.js 独立渲染。 -->
+  <section class="learning-workspace" id="learningWorkspace" hidden aria-label="学习" data-i18n-aria="learnWorkspaceTitle"></section>
+
+  <footer class="status-bar">
+    <span id="statusCoord">—</span>
+    <span class="status-sep"></span>
+    <span id="statusEngine" data-i18n="ready">就绪</span>
+    <span class="status-spacer"></span>
+    <span id="statusNav" data-i18n="livePosition">实时局面</span>
+  </footer>
+
+  <!-- 新对局 -->
+  <dialog class="dialog" id="newGameDialog" aria-labelledby="ngTitle">
+    <form method="dialog">
+      <h2 id="ngTitle" data-i18n="newGameTitle">新对局</h2>
+      <div class="form-grid">
+        <label><span data-i18n="boardSize">棋盘</span>
+          <div class="segmented" id="ngSize">
+            <button type="button" data-size="9">9×9</button>
+            <button type="button" data-size="13">13×13</button>
+            <button type="button" class="selected" data-size="19">19×19</button>
+          </div>
+        </label>
+        <label><span data-i18n="rule">规则</span>
+          <select id="ngRule">
+            <option value="chinese" data-i18n="ruleChinese">中国规则 · 数子</option>
+            <option value="japanese" data-i18n="ruleJapanese">日本规则 · 数目</option>
+            <option value="korean" data-i18n="ruleKorean">韩国规则 · 数目</option>
+          </select>
+        </label>
+        <label><span data-i18n="handicap">让子</span>
+          <select id="ngHandicap">
+            <option value="0">0</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+          </select>
+        </label>
+        <label><span id="ngModeLabel">对局方式</span><select id="ngMode"><option value="play">自己下棋</option><option value="watch">AI 对 AI · 观战</option></select></label>
+        <section id="ngMatchSettings" class="ng-match-settings" hidden>
+          <label><span id="ngBlackEngineLabel">黑方引擎</span><select id="ngBlackEngine"><option value="builtin">MCTS</option><option value="gtp">KataGo</option></select></label>
+          <label><span id="ngBlackRankLabel">黑方棋力</span><select id="ngBlackRank"></select></label>
+          <label><span id="ngWhiteEngineLabel">白方引擎</span><select id="ngWhiteEngine"><option value="builtin">MCTS</option><option value="gtp">KataGo</option></select></label>
+          <label><span id="ngWhiteRankLabel">白方棋力</span><select id="ngWhiteRank"></select></label>
+          <p id="ngMatchHint"></p>
+        </section>
+        <label><span data-i18n="youPlay">执子</span>
+          <div class="segmented" id="ngSide">
+            <button type="button" data-side="black"><i class="mini-stone black"></i><span data-i18n="black">黑</span></button>
+            <button type="button" data-side="white"><i class="mini-stone white"></i><span data-i18n="white">白</span></button>
+            <button type="button" class="selected" data-side="auto"><span data-i18n="auto">自动</span></button>
+          </div>
+        </label>
+        <label><span data-i18n="opponent">对手</span>
+          <div class="segmented" id="ngOpponent">
+            <button type="button" class="selected" data-opp="builtin"><span data-i18n="builtinAI">内置 AI</span></button>
+            <button type="button" data-opp="gtp"><span data-i18n="gtpAI">KataGo</span></button>
+            <button type="button" data-opp="human"><span data-i18n="human">双人</span></button>
+          </div>
+        </label>
+        <label id="ngStrengthLabel"><span data-i18n="strength">棋力</span>
+          <div class="strength" id="ngStrength" role="radiogroup" aria-label="棋力" data-i18n-aria="strengthAria">
+            <button type="button" data-s="1">1</button><button type="button" data-s="2">2</button>
+            <button type="button" class="selected" data-s="3">3</button><button type="button" data-s="4">4</button>
+            <button type="button" data-s="5">5</button><button type="button" data-s="6">6</button>
+            <button type="button" data-s="7">7</button><button type="button" data-s="8">8</button>
+            <button type="button" data-s="9">9</button>
+          </div>
+          <small id="ngStrengthHint" class="strength-range-hint"></small>
+        </label>
+        <label><span data-i18n="thinkTime">用时</span>
+          <select id="ngTime">
+            <option value="500">0.5s</option>
+            <option value="1000" selected>1s</option>
+            <option value="2000">2s</option>
+            <option value="4000">4s</option>
+            <option value="8000">8s</option>
+          </select>
+        </label>
+        <label><span data-i18n="timeControl">计时</span>
+          <select id="ngTimeControl">
+            <option value="off" selected data-i18n="timeOff">不计时</option>
+            <option value="blitz" data-i18n="timeBlitz">1分 + 3×20秒</option>
+            <option value="standard" data-i18n="timeStandard">5分 + 3×30秒</option>
+            <option value="long" data-i18n="timeLong">10分 + 5×30秒</option>
+            <option value="casual" data-i18n="timeCasual">15分（无读秒）</option>
+            <option value="fischer" data-i18n="timeFischer">3分 + 每手加2秒</option>
+          </select>
+        </label>
+      </div>
+      <p class="engine-line" id="ngEngineHint" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="ngCancel" data-i18n="cancel">取消</button>
+        <button type="button" class="btn primary" id="ngStart" data-i18n="start" autofocus>开始对局</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 引擎设置 -->
+  <dialog class="dialog" id="engineDialog" aria-labelledby="engTitle">
+    <form method="dialog">
+      <h2 id="engTitle" data-i18n="engineSettingsTitle">引擎设置</h2>
+      <p class="dialog-hint" data-i18n="engineChooseHint">选择推理引擎；所选引擎不可用时自动回退内置 MCTS。</p>
+      <h3 class="settings-subheading" data-i18n="engineCompute">围棋计算引擎</h3>
+      <div class="engine-choice" id="engineChoice" role="radiogroup" aria-label="推理引擎">
+        <button type="button" class="engine-option" data-engine="mcts" aria-pressed="false">
+          <span class="engine-option-name" data-i18n="engineMcts">内置 MCTS 算法</span>
+          <span class="engine-option-desc" data-i18n="engineMctsDesc">无需模型文件 · 本地搜索 · 九档约 18 级至 1 段（估算）</span>
+          <span class="engine-option-state" id="engineStateMcts">—</span>
+        </button>
+        <button type="button" class="engine-option" data-engine="b6" aria-pressed="false">
+          <span class="engine-option-name" data-i18n="engineB6">内置 KataGo g170-b6c96（浏览器）</span>
+          <span class="engine-option-desc" data-i18n="engineB6Desc">3.6 MB 模型 · 本地计算 · 九档约 18 级至 3 段（估算）</span>
+          <span class="engine-option-state" id="engineStateB6">—</span>
+        </button>
+        <button type="button" class="engine-option" data-engine="b10" aria-pressed="false">
+          <span class="engine-option-name" data-i18n="engineB10">内置 KataGo kata1-b10c128-s1141046784-d204142634（浏览器）</span>
+          <span class="engine-option-desc" data-i18n="engineB10Desc">14.5 MB 模型 · 本地计算 · 九档约 18 级至 6 段（估算）</span>
+          <span class="engine-option-state" id="engineStateB10">—</span>
+        </button>
+        <button type="button" class="engine-option" data-engine="b18" aria-pressed="false">
+          <span class="engine-option-name" data-i18n="engineB18">外置 KataGo kata1-b18c384nbt（本机桥接）</span>
+          <span class="engine-option-desc" data-i18n="engineB18Desc">模型大小随本机安装版本而异 · 本地计算 · 九档约 18 级至 9 段（估算）</span>
+          <span class="engine-option-state" id="engineStateB18">—</span>
+        </button>
+      </div>
+      <p class="dialog-hint engine-choice-hint" id="engineChoiceHint" hidden></p>
+      <p class="dialog-hint" data-i18n="engineHint">推荐双击「StartGoT.bat」自动连接本目录的 KataGo；浏览器内置棋力会在首次使用时自动加载。</p>
+      <details class="engine-advanced">
+        <summary data-i18n="engineAdvancedOptions">连接选项</summary>
+        <div class="engine-advanced-body">
+          <div class="quick-picks" id="engQuick">
+            <button type="button" class="mini-toggle" data-url=""><span data-i18n="quickLocal">本机 KataGo（同源）</span></button>
+            <button type="button" class="mini-toggle" data-url="http://127.0.0.1:8766"><span data-i18n="quickPy">Python 桥接 :8766</span></button>
+          </div>
+          <label class="wide-label"><span data-i18n="bridgeUrl">桥接地址</span>
+            <input type="text" id="bridgeUrl" value="" placeholder="http://127.0.0.1:4173" spellcheck="false">
+          </label>
+          <label class="wide-label"><span data-i18n="analysisTime">AI 分析用时</span>
+            <select id="engSeconds">
+              <option value="1">1s</option>
+              <option value="2" selected>2s</option>
+              <option value="3">3s</option>
+              <option value="5">5s</option>
+              <option value="8">8s</option>
+            </select>
+          </label>
+        </div>
+      </details>
+      <div class="dialog-actions">
+        <button type="button" class="btn primary" id="engConnect" data-i18n="connect">连接</button>
+      </div>
+      <div class="engine-status" id="engStatus"></div>
+      <section class="tutor-api-settings" aria-labelledby="tutorApiTitle">
+        <div><span class="learning-kicker">GOT TUTOR</span><h3 id="tutorApiTitle" data-i18n="tutorApiHeading">老师 AI API</h3><p class="dialog-hint" id="tutorApiHelp" data-i18n="tutorApiHelp">选择 DeepSeek API、OpenCode Go，或填写兼容 OpenAI Chat Completions 的自定义服务。API Key 仅保存在当前标签页会话，关闭标签页后需要重新填写；自定义服务地址和请求内容会经老师接口转发。</p></div>
+        <label class="wide-label"><span data-i18n="tutorApiProvider">供应商</span><select id="tutorProvider"><option value="opencode-go">OpenCode Go</option><option value="deepseek">DeepSeek API</option><option value="custom" data-i18n="tutorProviderCustom">自定义</option></select></label>
+        <label class="wide-label" id="tutorCustomEndpointField" hidden><span data-i18n="tutorCustomEndpoint">API 根地址</span><input id="tutorCustomBaseUrl" type="url" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="https://api.example.com/v1" data-i18n-placeholder="tutorCustomEndpointPlaceholder"></label>
+        <p class="dialog-hint tutor-custom-hint" id="tutorCustomEndpointHint" data-i18n="tutorCustomEndpointHint" hidden>仅支持公开 HTTPS 地址，需兼容支持工具调用的 Chat Completions；/models 不可用时可手动填写模型 ID。请填写 API 根地址（通常以 /v1 结尾）。</p>
+        <label class="wide-label"><span data-i18n="tutorApiModel">模型</span><select id="tutorModel"></select></label>
+        <label class="wide-label" id="tutorCustomModelField" hidden><span data-i18n="tutorCustomModel">自定义模型 ID</span><input id="tutorCustomModel" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="先读取模型，或手动输入模型 ID" data-i18n-placeholder="tutorCustomModelPlaceholder"></label>
+        <div class="dialog-actions tutor-model-actions"><button class="btn ghost" type="button" id="tutorModelsRefresh" data-i18n="tutorModelsRefresh">读取可用模型</button><span id="tutorModelsStatus" role="status" aria-live="polite"></span></div>
+        <label class="wide-label"><span id="tutorApiKeyLabel" data-i18n="tutorApiKeyLabel">API Key</span><input id="tutorApiKey" type="password" autocomplete="new-password" spellcheck="false" placeholder="粘贴 API Key；已配置时留空可保留"></label>
+        <div class="dialog-actions tutor-api-actions"><button class="btn primary" type="button" id="tutorApiSave" data-i18n="tutorApiSave">保存老师 AI 设置</button><button class="btn ghost" type="button" id="tutorVerify" data-i18n="tutorVerify">验证并读取模型</button><button class="btn ghost" type="button" id="tutorForget" data-i18n="tutorForget">删除此供应商密钥</button><span id="tutorApiStatus" role="status" aria-live="polite">正在检查老师服务…</span></div>
+        <section class="tutor-privacy" aria-labelledby="tutorPrivacyTitle"><h4 id="tutorPrivacyTitle" data-i18n="tutorPrivacyTitle">隐私与课堂记录</h4><p class="dialog-hint" data-i18n="tutorPrivacyHelp">课堂默认不保存；点击“保存课堂”后记录只保存在当前网站的这个浏览器，不会自动同步。提问时，当前棋局、问题及必要的课堂上下文会发送给所选模型供应商。</p></section>
+      </section>
+    </form>
+  </dialog>
+
+  <!-- 点目结果 -->
+  <dialog class="dialog" id="scoreDialog" aria-labelledby="scTitle">
+    <form method="dialog">
+      <h2 id="scTitle" data-i18n="scoreTitle">点目结果</h2>
+      <div class="score-grid" id="scoreGrid">
+        <div class="score-cell"><i class="mini-stone black"></i><b id="scoreBlackPts">0</b><span data-i18n="black">黑</span></div>
+        <div class="score-cell vs">vs</div>
+        <div class="score-cell"><i class="mini-stone white"></i><b id="scoreWhitePts">0</b><span data-i18n="white">白</span></div>
+      </div>
+      <p class="score-result" id="scoreResultText">—</p>
+      <table class="score-table" aria-label="点目明细" data-i18n-aria="scoreTableAria">
+        <thead><tr><th></th><th data-i18n="black">黑</th><th data-i18n="white">白</th></tr></thead>
+        <tbody>
+          <tr id="sdStonesRow"><td data-i18n="stonesRow">棋子</td><td id="sdStonesB">—</td><td id="sdStonesW">—</td></tr>
+          <tr><td data-i18n="territoryRow">领地</td><td id="sdTerrB">—</td><td id="sdTerrW">—</td></tr>
+          <tr id="sdPrisRow"><td data-i18n="prisonersRow">提子（含死子）</td><td id="sdPrisB">—</td><td id="sdPrisW">—</td></tr>
+          <tr><td data-i18n="komi">贴目</td><td></td><td id="sdKomi">—</td></tr>
+          <tr id="sdDameRow"><td data-i18n="dameRow">公气 / 未定</td><td id="sdDame" colspan="2">—</td></tr>
+          <tr id="sdAiRow"><td data-i18n="aiRefRow">AI 参考</td><td id="sdAiVal" colspan="2">—</td></tr>
+        </tbody>
+      </table>
+      <p class="score-rule" id="sdDameNote" hidden></p>
+      <p class="score-rule" id="sdAiNote" hidden></p>
+      <p class="score-rule" id="sdRule"></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="scKeep" data-i18n="keepPlaying">继续对局</button>
+        <button type="button" class="btn primary" id="scConfirm" data-i18n="confirmResult">确认结果</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 认输确认 -->
+  <dialog class="dialog small" id="resignDialog" aria-labelledby="resignTitle">
+    <form method="dialog">
+      <h2 id="resignTitle" data-i18n="resignConfirm">确认认输？</h2>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="rsCancel" data-i18n="cancel">取消</button>
+        <button type="button" class="btn danger" id="rsConfirm" data-i18n="resign">认输</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 显示设置 -->
+  <dialog class="dialog small" id="displayDialog" aria-labelledby="dsTitle">
+    <form method="dialog">
+      <h2 id="dsTitle" data-i18n="displaySettings">显示设置</h2>
+      <p class="dialog-hint" data-i18n="displaySettingsHint">候选着法的棋盘圈颜色与右栏排序方式。改动立即生效并记住。</p>
+      <fieldset class="settings-group"><legend data-i18n="boardDisplay">棋盘显示</legend>
+        <label class="wide-label"><span data-i18n="boardDisplay">棋盘显示</span><select id="board25dMode"><option value="2d" data-i18n="boardView2d">经典 2D 棋盘</option><option value="25d" data-i18n="boardView25d">3D 棋盘</option></select></label>
+        <div class="settings-toggles"><button class="tool-button toggle" id="boardAngleSliderToggle" type="button" aria-pressed="true" data-i18n-title="boardAngleSliderLabel" aria-label="显示 3D 棋盘快速设置" data-i18n-aria="boardAngleSliderLabel"><svg><use href="#i-display"></use></svg><span data-i18n="boardAngleSliderLabel">3D 棋盘快速设置</span></button></div>
+        <div class="settings-toggles"><button class="tool-button toggle" id="numbersBtn" type="button" aria-pressed="false" data-i18n-title="showNumbers" aria-label="手数">
+          <svg><use href="#i-numbers"></use></svg><span  data-i18n="showNumbers">手数</span>
+        </button>
+<button class="tool-button toggle" id="coordsBtn" type="button" aria-pressed="true" data-i18n-title="showCoords" aria-label="坐标">
+          <svg><use href="#i-coords"></use></svg><span  data-i18n="showCoords">坐标</span>
+        </button>
+        <button class="tool-button toggle" id="flipBtn" type="button" aria-pressed="false" data-i18n-title="flip" aria-label="翻转">
+          <svg><use href="#i-flip"></use></svg><span  data-i18n="flip">翻转</span>
+        </button>
+        <button class="tool-button toggle" id="naturalPlacementBtn" type="button" aria-pressed="true" data-i18n-title="naturalPlacementLabel" data-i18n-aria="naturalPlacementLabel">
+          <svg><use href="#i-focus"></use></svg><span data-i18n="naturalPlacementLabel">自然落点</span>
+        </button></div>
+        <p class="dialog-hint" data-i18n="naturalPlacementHint">棋子会偏移网格间距约 3%–5%；只改变显示，不影响实际落点。</p>
+      </fieldset>
+
+      <fieldset class="settings-group interface-theme-settings"><legend data-i18n="themeSettingsTitle">界面主题</legend>
+        <label class="wide-label"><span data-i18n="themeMode">界面主题</span>
+          <select id="themeSelect">
+            <option value="obsidian" data-i18n="themeObsidian">石墨木纹</option>
+            <option value="paper" data-i18n="themePaper">纸张暖白</option>
+            <option value="forest" data-i18n="themeForest">森林青绿</option>
+          </select>
+        </label>
+      </fieldset>
+      <fieldset class="settings-group classic-board-settings"><legend data-i18n="classicAppearance">经典 2D 棋盘外观</legend>
+        <div class="classic-board-material-layout">
+          <canvas id="classicAppearancePreview" class="appearance-preview-canvas" width="1024" height="1024" aria-label="经典 2D 棋盘局部样式预览" data-i18n-aria="classicAppearancePreviewLabel"></canvas>
+          <div class="classic-board-material-controls">
+            <label class="wide-label"><span data-i18n="materialMode">棋盘材质</span>
+              <select id="materialSelect">
+                <option value="kaya" data-i18n="materialKaya">榧木清韵</option>
+                <option value="kaya-photo" data-i18n="materialKayaPhoto">榧木实景</option>
+                <option value="tea" data-i18n="materialTea">古榧茶香</option>
+                <option value="ebony" data-i18n="materialEbony">玄檀静夜</option>
+                <option value="alphago" data-i18n="materialAlphaGo">浅金流光</option>
+                <option value="maple-light" data-i18n="materialMapleLight">枫影疏晴</option>
+                <option value="walnut-dark" data-i18n="materialWalnutDark">胡桃暮色</option>
+                <option value="paper-antique" data-i18n="materialPaperAntique">素笺怀古</option>
+                <option value="slate-dark" data-i18n="materialSlateDark">青石幽境</option>
+                <option value="ivory-modern" data-i18n="materialIvoryModern">象牙凝霜</option>
+                <option value="cinnabar-lacquer" data-i18n="materialCinnabar">朱漆流金</option>
+                <option value="indigo-lacquer" data-i18n="materialIndigo">青岩叠嶂</option>
+                <option value="celadon-lacquer" data-i18n="materialCeladon">碧瓷凝翠</option>
+              </select>
+            </label>
+            <label class="wide-label"><span data-i18n="stoneMode">棋子材质</span>
+              <select id="stoneSelect">
+                <option value="yunzi" data-i18n="stoneYunzi">云子含章</option>
+                <option value="classic" data-i18n="stoneClassic">玄素雅韵</option>
+                <option value="matte" data-i18n="stoneMatte">素石无华</option>
+                <option value="alphago" data-i18n="stoneAlphaGo">温润玄素</option>
+                <option value="soft-gloss" data-i18n="stoneSoftGloss">柔光凝露</option>
+                <option value="photorealistic" data-i18n="stonePhotorealistic">莹然如真</option>
+                <option value="shell-slate" data-i18n="stoneShellSlate">贝雪岩墨</option>
+                <option value="jade" data-i18n="stoneJade">琼玉生辉</option>
+                <option value="antique" data-i18n="stoneAntique">象牙古韵</option>
+                <option value="porcelain" data-i18n="stonePorcelain">瓷光映雪</option>
+                <option value="golden-satin" data-i18n="stoneGoldenSatin">玄曜凝光</option>
+                <option value="shell-brushed" data-i18n="stoneShellBrushed">贝纹柔光</option>
+                <option value="ink-flat" data-i18n="stoneInkFlat">墨韵留白</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="settings-group board-25d-settings"><legend data-i18n="board25dAppearance">3D 棋盘外观</legend>
+
+        <label class="wide-label"><span data-i18n="board25dFinishMode">盘面材质</span>
+          <select id="board25dFinish">
+            <option value="kaya" data-i18n="finishKaya">榧木</option><option value="maple" data-i18n="finishMaple">枫木</option>
+            <option value="walnut" data-i18n="finishWalnut">胡桃木</option><option value="rosewood" data-i18n="finishRosewood">花梨木</option>
+            <option value="bamboo" data-i18n="finishBamboo">竹纹</option><option value="slate" data-i18n="finishSlate">青石</option><option value="walnut-pbr" data-i18n="finishWalnutPbr">胡桃实纹</option><option value="oak-pbr" data-i18n="finishOakPbr">浅橡木</option><option value="stone-pbr" data-i18n="finishStonePbr">岩层青石</option>
+          </select>
+        </label>
+        <label class="wide-label"><span data-i18n="board25dToneMode">盘面色调</span>
+          <select id="board25dTone"><option value="natural" data-i18n="toneNatural">原色</option><option value="light" data-i18n="toneLight">浅色</option><option value="deep" data-i18n="toneDeep">深色</option></select>
+        </label>
+        <label class="wide-label"><span data-i18n="board25dGlossMode">表面光泽</span>
+          <select id="board25dGloss"><option value="matte" data-i18n="glossMatte">哑光</option><option value="satin" data-i18n="glossSatin">缎面</option><option value="polished" data-i18n="glossPolished">抛光</option></select>
+        </label>
+        <label class="wide-label"><span data-i18n="board25dStoneMaterialMode">棋子材质</span>
+          <select id="board25dStoneMaterial"><option value="yunzi" data-i18n="stoneMaterialYunzi">温润云子</option><option value="premium-yunzi" data-i18n="stoneMaterialPremium">高阶云子</option></select>
+        </label>
+        <label class="wide-label"><span data-i18n="board25dStoneMode">棋子形状</span>
+          <select id="board25dStoneShape"><option value="single" data-i18n="stoneSingle">单凸云子</option><option value="double" data-i18n="stoneDouble">双凸云子</option></select>
+        </label>
+        <label class="wide-label"><span data-i18n="board25dLightingMode">棋盘光线</span>
+          <select id="board25dLighting"><option value="daylight" data-i18n="lightDaylight">柔和日光</option><option value="sidelight" data-i18n="lightSidelight">侧窗光</option><option value="warm" data-i18n="lightWarm">暖灯</option></select>
+        </label>
+<label class="wide-label"><span data-i18n="board25dBackground">场景背景</span><select id="board25dBackground"><option value="dark" data-i18n="sceneDark">墨色静境</option><option value="wood" data-i18n="sceneWood">木案清谈</option><option value="tatami" data-i18n="sceneTatami">和室草席</option><option value="stone" data-i18n="sceneStone">庭院石台</option></select></label>
+        <div class="settings-toggles"><button class="tool-button toggle" id="board25dSharedLighting" type="button" aria-pressed="true" data-i18n="sharedLighting">共享光照</button><button class="tool-button toggle" id="board25dEnhancedShadows" type="button" aria-pressed="true" data-i18n="enhancedShadows">增强阴影</button></div>
+        <label class="wide-label range-label"><span><span data-i18n="board25dCameraAngle">俯视角度</span><output id="board25dCameraAngleValue" for="board25dCameraAngle">54°</output></span><span class="angle-range"><input id="board25dCameraAngle" type="range" min="0" max="60" step="1" value="54"><i class="angle-marker angle-marker-natural" title="24° · 自然视角" aria-hidden="true"></i><i class="angle-marker angle-marker-realistic" title="36° · 实景视角" aria-hidden="true"></i></span><span class="angle-recommendations"><span data-i18n="board25dAngleNatural">24° · 自然</span><span data-i18n="board25dAngleRealistic">36° · 实景</span></span></label>
+        <label class="wide-label range-label"><span><span data-i18n="board25dGridScale">棋盘格范围</span><output id="board25dGridScaleValue" for="board25dGridScale">100%</output></span><input id="board25dGridScale" type="range" min="80" max="100" step="1" value="100"></label>
+        <label class="wide-label"><span data-i18n="board25dQualityLabel">画质</span><select id="board25dQuality"><option value="auto" data-i18n="qualityAuto">自动适配设备</option><option value="low" data-i18n="qualityLow">省电 · 接触阴影</option><option value="balanced" data-i18n="qualityBalanced">均衡 · 柔和阴影</option><option value="high" data-i18n="qualityHigh">精细 · 高清材质</option></select></label>
+        <label class="wide-label"><span data-i18n="board25dMotionLabel">落子与提子动画</span><select id="board25dAnimations"><option value="on" data-i18n="motionOn">开启</option><option value="off" data-i18n="motionOff">关闭</option></select></label>
+      </fieldset>
+      <fieldset class="settings-group"><legend data-i18n="operationPreferences">操作偏好</legend>
+        <div class="settings-toggles"><button class="tool-button toggle" id="confirmBtn" type="button" aria-pressed="false" data-i18n-title="confirmMove" aria-label="确认落子">
+          <svg><use href="#i-confirm"></use></svg><span  data-i18n="confirmMove">落子确认</span>
+        </button>
+          <button class="tool-button toggle" id="soundBtn" type="button" aria-pressed="true"><svg><use href="#i-volume"></use></svg><span data-i18n="soundLabel">音效</span></button>
+        </div>
+        <label class="wide-label"><span data-i18n="confirmModeLabel">落子确认方式</span>
+          <select id="confirmMode">
+            <option value="double" data-i18n="confirmModeDouble">双击同一位置</option>
+            <option value="button" data-i18n="confirmModeButton">点击确认按钮</option>
+          </select>
+        </label>
+        <label class="wide-label"><span data-i18n="board2dMotionLabel">2D 落子与提子动画</span><select id="board2dAnimations"><option value="on" data-i18n="motionOn">开启</option><option value="off" data-i18n="motionOff">关闭</option></select></label>
+        <p class="dialog-hint" data-i18n="board2dMotionHint">只控制经典 2D 棋盘；3D 动画可单独设置。</p>
+        <label class="wide-label"><span data-i18n="boardAnimationSpeedLabel">棋盘动画速度</span><select id="boardAnimationSpeed"><option value="0.75" data-i18n="animationSpeedSlow">舒缓 · 0.75×</option><option value="1" data-i18n="animationSpeedNormal">标准 · 1×</option><option value="1.25" data-i18n="animationSpeedQuick">稍快 · 1.25×</option><option value="1.5" data-i18n="animationSpeedFast">快速 · 1.5×</option></select></label>
+        <p class="dialog-hint" data-i18n="boardAnimationSpeedHint">同时应用于 2D 与 3D；两种棋盘的动画开关仍然独立。</p>
+        <p class="dialog-hint" data-i18n="shortcutHelp">← → 浏览棋谱 · U 悔棋 · R 恢复悔棋 · M 音效</p>
+      </fieldset>
+      <fieldset class="settings-group"><legend data-i18n="analysisDisplay">分析显示</legend>
+      <label class="wide-label"><span data-i18n="candColorMode">棋盘候选圈颜色</span>
+        <select id="dsCandColor">
+          <option value="winrate" data-i18n="candColorWinrate">按胜率（绿高红低）</option>
+          <option value="rank" data-i18n="candColorRank">按排名（第 1 最绿）</option>
+        </select>
+      </label>
+      <label class="wide-label"><span data-i18n="candSortMode">候选列表排序</span>
+        <select id="dsCandSort">
+          <option value="visits" data-i18n="candSortVisits">按访问量（AI 偏好）</option>
+          <option value="winrate" data-i18n="candSortWinrate">按胜率</option>
+        </select>
+      </label>
+      </fieldset>
+      <section class="appearance-reset">
+        <button type="button" class="btn ghost" id="resetAppearanceBtn"><svg aria-hidden="true"><use href="#i-redo"></use></svg><span data-i18n="appearanceReset">恢复棋盘默认外观</span></button>
+      </section>
+      <div class="dialog-actions">
+        <button type="submit" class="btn primary" data-i18n="close">关闭</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 关于 -->
+  <dialog class="dialog about-dialog" id="aboutDialog" aria-labelledby="aboutTitle">
+    <form method="dialog">
+      <header class="about-hero">
+        <img src="favicon-transparent.svg" alt="GoT 围棋工作台图标" width="64" height="64">
+  <div><span class="about-eyebrow">GO · THINK · REVIEW</span><h2 id="aboutTitle">GoT <span data-i18n="brandSub">围棋</span></h2><p id="aboutVersion">GoT v1.0.0</p></div>
+        <button class="about-close" type="submit" aria-label="关闭" data-i18n-aria="close">×</button>
+      </header>
+      <p class="about-lead" data-i18n="aboutText">GoT 是开源围棋工作台，提供对弈、学习、死活题、棋谱与复盘。</p>
+  <section class="about-license"><h3 id="aboutCurrentTitle" data-i18n="aboutCurrentTitle">首次公开发布</h3><p id="aboutCurrentBody" data-i18n="aboutCurrentBody">现代化界面与沉浸式 2D/3D 棋盘，支持 KataGo 智能分析、AI 交互教学、棋谱树浏览和个性化棋具选择。</p></section>
+      <section class="about-license"><p><strong data-i18n="aboutComputeTitle">网站版算力说明</strong><br><span data-i18n="aboutComputeBody">网站版受浏览器和设备算力限制。需要更强的棋力与分析能力，可安装本机版并启用本地 KataGo。</span></p><a href="releasenotes.html" data-i18n="updateLog">查看更新日志</a></section>
+      <section class="about-owner"><span class="about-section-label">PROJECT</span><div><strong>Turays 的 GoT 项目</strong><a href="https://turays.com" target="_blank" rel="noopener">turays.com <span aria-hidden="true">↗</span></a></div><a class="about-source" href="https://github.com/PotatoMap/GoT" target="_blank" rel="noopener" data-i18n="aboutSourceLabel">GitHub 源码与本机版说明 ↗</a></section>
+      <section class="about-license"><h3 data-i18n="aboutLicenseTitle">开源许可</h3><p><strong>GoT 主项目 · ISC</strong><br><span data-i18n="aboutLicenseSummary">可使用、修改和再发布；再分发时请保留版权与许可声明。</span> <a href="LICENSE" target="_blank" rel="noopener" data-i18n="aboutLicenseRead">查看完整许可</a></p><p><strong data-i18n="aboutThirdParty">第三方组件</strong><br><span data-i18n="aboutThirdPartySummary">KataGo、Web KaTrain、TensorFlow.js 与网络模型按各自许可和声明文件提供。</span> <a href="katago/NOTICE.md" target="_blank" rel="noopener" data-i18n="aboutThirdPartyRead">查看组件说明</a></p></section>
+      <footer class="about-footer"><button type="submit" class="btn primary" data-i18n="close">关闭</button></footer>
+    </form>
+  </dialog>
+
+  <!-- 设置：真正的设置页（分区 + 跳转到各专项弹窗）。「引擎」入口也收在这里。 -->
+  <dialog class="dialog settings-dialog" id="settingsDialog" aria-labelledby="setTitle">
+    <form method="dialog">
+      <h2 id="setTitle" data-i18n="settingsTitle">设置</h2>
+      <div class="settings-page">
+        <section class="settings-section">
+          <h3 data-i18n="settingsSectionPlay">对局</h3>
+          <div class="form-grid">
+            <label><span data-i18n="strength">棋力</span><select id="setStrength"></select><small id="setStrengthHint" class="strength-range-hint"></small></label>
+            <label><span data-i18n="thinkTime">用时</span>
+              <select id="setTime">
+                <option value="500">0.5s</option><option value="1000">1s</option>
+                <option value="2000">2s</option><option value="4000">4s</option><option value="8000">8s</option>
+              </select>
+            </label>
+          </div>
+          <button class="btn ghost" id="setNewGame" type="button"><svg aria-hidden="true"><use href="#i-new"></use></svg><span data-i18n="newGame">新对局</span></button>
+          <section class="tutor-storage" aria-labelledby="tutorStorageTitle">
+            <h4 id="tutorStorageTitle" data-i18n="tutorStorageTitle">本地存储管理 · 历史课堂</h4>
+            <p class="dialog-hint" data-i18n="tutorStorageHint">课堂默认不保存。点击课堂里的“保存课堂”后，记录和棋局快照才会保存在此浏览器。</p>
+            <div id="tutorStorageList" class="tutor-storage-list" aria-live="polite"></div>
+            <p id="tutorStorageEmpty" class="dialog-hint tutor-storage-empty" data-i18n="tutorStorageEmpty">还没有保存的课堂。</p>
+          </section>
+        </section>
+        <section class="settings-section">
+          <h3 data-i18n="settingsSectionEngine">引擎</h3>
+          <p class="dialog-hint" id="setEngineState">—</p>
+        </section>
+        <section class="settings-section">
+          <h3 data-i18n="settingsSectionBoard">棋盘与显示</h3>
+        </section>
+        <section class="settings-section">
+          <h3 data-i18n="settingsSectionMore">语言与关于</h3>
+          <label class="wide-label"><span data-i18n="languageLabel">界面语言</span>
+            <select id="setLang">
+              <option value="zh">简体中文</option>
+              <option value="zhHant">繁體中文</option>
+              <option value="en">English</option>
+              <option value="ja">日本語</option>
+              <option value="ko">한국어</option>
+            </select>
+          </label>
+          <fieldset class="settings-group"><legend data-i18n="settingsResources">帮助与项目信息</legend>
+          <div class="settings-resource-actions">
+            <button class="btn ghost" id="setAbout" type="button"><svg aria-hidden="true"><use href="#i-info"></use></svg><span data-i18n="settingsAbout">关于 GoT</span></button>
+            <a class="btn ghost" id="setNotice" href="show/index.html" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-more"></use></svg><span data-i18n="noticeAbout">使用指南</span></a>
+            <a class="btn ghost" id="setChangelog" href="releasenotes.html"><svg aria-hidden="true"><use href="#i-records"></use></svg><span data-i18n="updateLog">更新日志</span></a>
+            <a class="btn ghost" id="setPrivacyPolicy" href="privacy.html" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-info"></use></svg><span data-i18n="privacyPolicy">隐私政策</span></a>
+            <a class="btn ghost" id="setTerms" href="terms.html" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-info"></use></svg><span data-i18n="termsOfUse">使用条款</span></a>
+          </div></fieldset>
+          <fieldset class="settings-group"><legend data-i18n="settingsMaintenance">安装与更新</legend>
+          <div class="settings-resource-actions">
+            <button class="btn ghost" id="setInstallApp" type="button"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg><span data-i18n="installApp">安装 GoT</span></button>
+            <button class="btn ghost" id="setApplyUpdate" type="button"><svg aria-hidden="true"><use href="#i-redo"></use></svg><span data-i18n="applyUpdate">更新页面</span></button>
+            <button class="btn ghost" id="setClearCache" type="button"><svg aria-hidden="true"><use href="#i-redo"></use></svg><span data-i18n="clearCache">清空缓存并重载</span></button>
+          </div></fieldset>
+          <p class="dialog-hint" id="setVersion"></p>
+        </section>
+        <section class="settings-section workspace-preferences-section">
+          <h3 data-i18n="settingsSectionPersonalization">个性化</h3>
+          <div id="personalizationAppearanceEditor" class="personalization-appearance-editor" role="group" aria-label="棋盘外观" data-i18n-aria="personalizationAppearanceTitle"></div>
+          <fieldset class="settings-group workspace-width-group">
+            <legend data-i18n="workspaceWidthTitle">工作区宽度</legend>
+            <div id="workspaceWidthEditor"></div>
+          </fieldset>
+          <fieldset class="settings-group">
+            <legend data-i18n="workspaceLayoutsTitle">对弈与复盘面板</legend>
+            <div id="workspaceLayoutEditor"></div>
+          </fieldset>
+          <fieldset class="settings-group">
+            <legend data-i18n="treeStyleTitle">棋谱树样式</legend>
+            <div id="treeStyleEditor"></div>
+          </fieldset>
+          <fieldset class="settings-group">
+            <legend data-i18n="analysisDisplay">分析显示</legend>
+            <label class="analysis-tools-setting"><input id="advancedAnalysisToggle" type="checkbox"><span data-i18n="showAdvancedAnalysis">显示高级分析工具</span></label>
+          </fieldset>
+          <fieldset class="settings-group">
+            <legend data-i18n="tutorPreferencesTitle">AI 老师偏好</legend>
+            <div class="tutor-preferences-grid">
+              <label class="wide-label"><span data-i18n="tutorStyleLabel">教学风格</span><select id="tutorPrefStyle" data-tutor-preference="style">
+                <option value="patient" data-i18n="tutorStylePatient">耐心引导</option><option value="direct" data-i18n="tutorStyleDirect">简明直接</option><option value="socratic" data-i18n="tutorStyleSocratic">启发提问</option>
+              </select></label>
+              <label class="wide-label"><span data-i18n="tutorDepthLabel">讲解深度</span><select id="tutorPrefDepth" data-tutor-preference="depth">
+                <option value="brief" data-i18n="tutorDepthBrief">简短</option><option value="balanced" data-i18n="tutorDepthBalanced">适中</option><option value="detailed" data-i18n="tutorDepthDetailed">深入</option>
+              </select></label>
+              <label class="wide-label"><span data-i18n="tutorHintsLabel">提示方式</span><select id="tutorPrefHints" data-tutor-preference="hints">
+                <option value="progressive" data-i18n="tutorHintsProgressive">逐步提示</option><option value="gentle" data-i18n="tutorHintsGentle">温和提示</option><option value="explicit" data-i18n="tutorHintsExplicit">明确提示</option>
+              </select></label>
+            </div>
+          </fieldset>
+          <p class="dialog-hint workspace-preference-status" id="workspacePreferenceStatus" role="status" aria-live="polite"></p>
+          <button class="tool-button workspace-layout-reset" id="workspaceLayoutResetBtn" type="button" data-i18n="workspaceLayoutsReset">恢复默认设置</button>
+        </section>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn primary" id="setClose" data-i18n="close">关闭</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog small" id="appearanceResetDialog" aria-labelledby="appearanceResetTitle">
+    <form method="dialog">
+      <h2 id="appearanceResetTitle" data-i18n="appearanceResetTitle">恢复默认外观？</h2>
+      <p class="dialog-hint" data-i18n="appearanceResetMessage">只恢复棋盘外观。棋局、棋谱、API Key、学习记录、音效和落子确认设置都会保留。</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="appearanceResetCancel" data-i18n="cancel">取消</button>
+        <button type="button" class="btn primary" id="appearanceResetConfirm" data-i18n="appearanceReset">恢复棋盘默认外观</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog cache-confirm-dialog" id="cacheConfirmDialog" aria-labelledby="cacheConfirmTitle">
+    <form method="dialog">
+      <span class="cache-confirm-mark" aria-hidden="true">!</span>
+      <h2 id="cacheConfirmTitle" data-i18n="clearCacheConfirmTitle">清空缓存并重载？</h2>
+      <p data-i18n="clearCacheConfirmMessage">将清除此浏览器保存的 GoT 页面缓存并重新载入。棋局记录和设置不会被清除。</p>
+      <div class="dialog-actions">
+        <button class="btn ghost" id="cacheConfirmCancel" type="button" data-i18n="cancel">取消</button>
+        <button class="btn danger cache-confirm-action" id="cacheConfirm" type="button" data-i18n="clearCacheConfirm">清空并重载</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog cache-confirm-dialog" id="tutorRecordDeleteDialog" aria-labelledby="tutorRecordDeleteTitle">
+    <form method="dialog">
+      <span class="cache-confirm-mark" aria-hidden="true">!</span>
+      <h2 id="tutorRecordDeleteTitle" data-i18n="tutorRecordDeleteTitle">删除这段课堂记录？</h2>
+      <p data-i18n="tutorRecordDeleteConfirm">这会从此浏览器删除选中的课堂记录和棋局快照，无法撤销。</p>
+      <div class="dialog-actions">
+        <button class="btn ghost" id="tutorRecordDeleteCancel" type="button" data-i18n="cancel">取消</button>
+        <button class="btn danger cache-confirm-action" id="tutorRecordDeleteConfirm" type="button" data-i18n="tutorRecordDeleteAction">删除记录</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 死活题 -->
+  <dialog class="dialog catalog-dialog" id="problemDialog" aria-labelledby="problemTitle">
+    <form method="dialog">
+      <div class="browse-heading catalog-heading">
+        <h2 id="problemTitle" data-i18n="problemsTitle">死活题 · 古典棋谱</h2>
+        <button type="button" class="btn ghost" id="problemDialogClose" data-i18n="close">关闭</button>
+      </div>
+      <div class="dialog-actions catalog-actions" style="justify-content:flex-start;gap:8px;margin:2px 0 12px">
+        <button type="button" class="btn ghost" id="problemRandom"><span data-i18n="problemsRandom">随机一题</span></button>
+      </div>
+      <p class="dialog-hint problem-dialog-hint catalog-note" data-i18n="problemProgressHint">完成后会记住最好进度；查看正解不会计入完成。</p>
+      <div id="problemDialogBody"></div>
+    </form>
+  </dialog>
+
+  <input type="file" id="fileInput" multiple accept=".sgf,.json,text/plain,application/json" hidden>
+  <input type="file" id="folderInput" webkitdirectory directory multiple accept=".sgf,.SGF,text/plain" hidden>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="text/plain" id="got-ai-worker-src">
+/* GoT — built-in Go AI engine (Web Worker).
+ * MCTS (PUCT) + Go-specific heuristic priors + light playouts on an
+ * incremental union-find board with liberty counting (Tromp-Taylor scoring).
+ * Usable in a Worker (postMessage protocol) and from Node (require) for tests. */
+'use strict';
+
+(function (scope) {
+  const isWorkerRuntime = typeof scope.postMessage === 'function' && typeof scope.importScripts === 'function';
+  const EMPTY = 0, BLACK = 1, WHITE = 2;
+  function other(c) { return c === BLACK ? WHITE : BLACK; }
+
+  /* ------------------------------------------------------------------ *
+   *  FastBoard: union-find groups with incremental liberty counts       *
+   *  每个根维护棋子链表（head/tail/next），groupStones/recountLibs 按    *
+   *  链表遍历 O(棋组)，不再整盘扫描 O(棋盘)。                           *
+   * ------------------------------------------------------------------ */
+  let _scratchN = 19 * 19;
+  let _seenFlags = new Uint8Array(_scratchN);
+  let _grpSeen = new Uint8Array(_scratchN);
+  function ensureScratch(n) {
+    if (n <= _scratchN) return;
+    _scratchN = n;
+    _seenFlags = new Uint8Array(n);
+    _grpSeen = new Uint8Array(n);
+  }
+  const _nb1 = [], _nb2 = [], _oppR = [], _myR = [], _cap = [], _tou = [], _capRoots = [];
+  const _st = [], _stack = [], _region = [];
+
+  class FastBoard {
+    constructor(size) {
+      this.size = size;
+      const n = size * size;
+      ensureScratch(n);
+      this.board = new Int8Array(n);
+      this.parent = new Int32Array(n).fill(-1);
+      this.libs = new Int16Array(n);
+      this.stones = new Int16Array(n);
+      this.stamp = new Int32Array(n);
+      this.curStamp = 1;
+      this.ko = -1;
+      this.captures = new Int16Array(3);
+      this.lastMove = -1;
+      this.head = new Int32Array(n).fill(-1);  // 根 → 首子
+      this.tail = new Int32Array(n).fill(-1);  // 根 → 末子
+      this.next = new Int32Array(n).fill(-1);  // 棋子 → 链中下一子
+    }
+    clone() {
+      const f = new FastBoard(this.size);
+      f.board.set(this.board); f.parent.set(this.parent); f.libs.set(this.libs);
+      f.stones.set(this.stones); f.stamp.set(this.stamp); f.curStamp = this.curStamp;
+      f.ko = this.ko; f.captures.set(this.captures); f.lastMove = this.lastMove;
+      f.head.set(this.head); f.tail.set(this.tail); f.next.set(this.next);
+      return f;
+    }
+    nb(i, out) {
+      const s = this.size, x = i % s;
+      out.length = 0;
+      if (x > 0) out.push(i - 1);
+      if (x < s - 1) out.push(i + 1);
+      if (i >= s) out.push(i - s);
+      if (i < s * (s - 1)) out.push(i + s);
+      return out;
+    }
+    find(i) {
+      let r = i;
+      while (this.parent[r] !== r) r = this.parent[r];
+      while (this.parent[i] !== r) { const nx = this.parent[i]; this.parent[i] = r; i = nx; }
+      return r;
+    }
+    /* raw setup stone (no captures); call rebuild() after batch */
+    setupStone(i, color) {
+      if (color === EMPTY) {
+        this.board[i] = EMPTY; this.parent[i] = -1;
+        this.head[i] = -1; this.tail[i] = -1; this.next[i] = -1;
+        return;
+      }
+      this.board[i] = color; this.parent[i] = i; this.stones[i] = 1; this.libs[i] = 0;
+      this.head[i] = i; this.tail[i] = i; this.next[i] = -1;
+    }
+    rebuild() {
+      const n = this.board.length;
+      // 全部复位为单例组
+      for (let i = 0; i < n; i++) {
+        if (this.board[i] === EMPTY) {
+          this.parent[i] = -1; this.stones[i] = 0; this.libs[i] = 0;
+          this.head[i] = -1; this.tail[i] = -1; this.next[i] = -1;
+          continue;
+        }
+        this.parent[i] = i; this.stones[i] = 1; this.libs[i] = 0;
+        this.head[i] = i; this.tail[i] = i; this.next[i] = -1;
+      }
+      // 并查集合并相邻同色置子——否则 setup 相邻两子是两块"幽灵单子组"：
+      // 幻影提子（真规则不提的被提）+ stones 计数错误 → 劫误判
+      const s = this.size;
+      for (let i = 0; i < n; i++) {
+        const c = this.board[i];
+        if (c === EMPTY) continue;
+        const x = i % s;
+        // 只向右、向下连，避免重复
+        const nx = x > 0 ? i - 1 : -1;
+        if (nx >= 0 && this.board[nx] === c) {
+          const ra = this.find(i), rb = this.find(nx);
+          if (ra !== rb) { this.stones[ra] += this.stones[rb]; this.parent[rb] = ra; this.next[this.tail[ra]] = this.head[rb]; this.tail[ra] = this.tail[rb]; }
+        }
+        const ny = i >= s ? i - s : -1;
+        if (ny >= 0 && this.board[ny] === c) {
+          const ra = this.find(i), rb = this.find(ny);
+          if (ra !== rb) { this.stones[ra] += this.stones[rb]; this.parent[rb] = ra; this.next[this.tail[ra]] = this.head[rb]; this.tail[ra] = this.tail[rb]; }
+        }
+      }
+      // 重建组头索引与各根气数
+      const roots = [];
+      _grpSeen.fill(0, 0, n);
+      for (let i = 0; i < n; i++) {
+        if (this.board[i] === EMPTY) continue;
+        const r = this.find(i);
+        if (!_grpSeen[r]) { _grpSeen[r] = 1; roots.push(r); }
+      }
+      for (const r of roots) this.recountLibs(r);
+      this.ko = -1;
+    }
+    /* Play a stone. Returns number of captured stones, or -1 if illegal. */
+    play(i, color) {
+      const b = this.board;
+      if (i < 0 || i >= b.length) return -1;
+      if (b[i] !== EMPTY || i === this.ko) return -1;
+      const opp = other(color);
+      b[i] = color;
+      this.parent[i] = i; this.stones[i] = 1;
+      this.head[i] = i; this.tail[i] = i; this.next[i] = -1;
+      const nb = this.nb(i, _nb1);
+      // classify neighbors
+      _myR.length = 0; _oppR.length = 0;
+      for (let k = 0; k < nb.length; k++) {
+        const n = nb[k];
+        if (b[n] === EMPTY) continue;
+        const r = this.find(n);
+        if (b[n] === color) { if (_myR.indexOf(r) < 0) _myR.push(r); }
+        else if (_oppR.indexOf(r) < 0) _oppR.push(r);
+      }
+      // 自杀预判（ mutations 前完成）：无提子且合并后无气 → 直接拒绝，
+      // 棋盘完全未动——避免旧实现"先合并后回滚"造成并组状态损坏
+      let willCapture = false;
+      for (const r of _oppR) { if (this.libs[r] === 1) { willCapture = true; break; } }
+      if (!willCapture) {
+        this.curStamp++;
+        let libsAfter = 0;
+        const st = _stack; st.length = 0;
+        this.stamp[i] = this.curStamp; st.push(i);
+        while (st.length) {
+          const c = st.pop();
+          const cnb = this.nb(c, _nb2);
+          for (let k = 0; k < cnb.length; k++) {
+            const p = cnb[k];
+            if (this.board[p] === EMPTY) {
+              if (this.stamp[p] !== this.curStamp) { this.stamp[p] = this.curStamp; libsAfter++; }
+            } else if (this.board[p] === color && this.stamp[p] !== this.curStamp) {
+              this.stamp[p] = this.curStamp; st.push(p); // 洪泛穿过己方连通组
+            }
+          }
+        }
+        if (libsAfter === 0) {
+          b[i] = EMPTY; this.parent[i] = -1; this.stones[i] = 0;
+          this.head[i] = -1; this.tail[i] = -1; this.next[i] = -1;
+          return -1;
+        }
+      }
+      // merge same-color neighbor groups (always, choosing largest as root)
+      let myRoot = i;
+      for (const r of _myR) if (this.stones[r] >= this.stones[myRoot]) myRoot = r;
+      if (_myR.length) {
+        if (myRoot !== i) {
+          this.parent[i] = myRoot;
+          this.stones[myRoot]++;
+          // 新子挂到 myRoot 链尾
+          this.next[this.tail[myRoot]] = i;
+          this.tail[myRoot] = i;
+          this.head[i] = -1; this.tail[i] = -1;
+        }
+        for (const r of _myR) {
+          if (r === myRoot) continue;
+          this.stones[myRoot] += this.stones[r];
+          this.parent[r] = myRoot;
+          // 被并根的整条棋子链接到 myRoot 链尾
+          this.next[this.tail[myRoot]] = this.head[r];
+          this.tail[myRoot] = this.tail[r];
+          this.head[r] = -1; this.tail[r] = -1;
+        }
+      }
+      this.recountLibs(myRoot);
+      // decrease liberties of opponent neighbor groups
+      for (const r of _oppR) this.libs[r]--;
+      // capture dead opponent groups
+      _cap.length = 0; _capRoots.length = 0;
+      for (const r of _oppR) {
+        if (this.libs[r] <= 0) {
+          _capRoots.push(r);
+          const gs = this.groupStones(r);
+          for (const st of gs) _cap.push(st);
+        }
+      }
+      if (_cap.length) {
+        for (const c of _cap) { this.board[c] = EMPTY; this.parent[c] = -1; }
+        for (const r of _capRoots) { this.head[r] = -1; this.tail[r] = -1; }
+        this.captures[color] += _cap.length;
+        // captured points are new liberties for ALL adjacent groups (both colors)
+        _tou.length = 0;
+        for (const c of _cap) {
+          const nb2 = this.nb(c, _nb2);
+          for (let k = 0; k < nb2.length; k++) {
+            const n = nb2[k];
+            if (this.board[n] !== EMPTY) {
+              const r = this.find(n);
+              if (_tou.indexOf(r) < 0) _tou.push(r);
+            }
+          }
+        }
+        for (const r of _tou) this.recountLibs(r);
+        myRoot = this.find(i);
+      }
+      // simple ko
+      if (_cap.length === 1) {
+        const r = this.find(i);
+        if (this.stones[r] === 1 && this.libs[r] === 1) this.ko = _cap[0];
+        else this.ko = -1;
+      } else this.ko = -1;
+      this.lastMove = i;
+      return _cap.length;
+    }
+    groupStones(root) {
+      const out = _st; out.length = 0;
+      for (let s = this.head[root]; s >= 0; s = this.next[s]) out.push(s);
+      return out;
+    }
+    recountLibs(root) {
+      let libs = 0;
+      this.curStamp++;
+      for (let s = this.head[root]; s >= 0; s = this.next[s]) {
+        const nb = this.nb(s, _nb2);
+        for (let k = 0; k < nb.length; k++) {
+          const p = nb[k];
+          if (this.board[p] === EMPTY && this.stamp[p] !== this.curStamp) {
+            this.stamp[p] = this.curStamp; libs++;
+          }
+        }
+      }
+      this.libs[root] = libs;
+      return libs;
+    }
+    isTrueEye(i, color) {
+      const b = this.board, s = this.size, x = i % s, y = (i / s) | 0;
+      let edge = false;
+      if (x > 0 && b[i - 1] !== color) return false;
+      if (x === 0 || x === s - 1) edge = true;
+      if (x < s - 1 && b[i + 1] !== color) return false;
+      if (y > 0 && b[i - s] !== color) return false;
+      if (y === 0 || y === s - 1) edge = true;
+      if (y < s - 1 && b[i + s] !== color) return false;
+      let badDiag = 0;
+      const opp = other(color);
+      for (let dy = -1; dy <= 1; dy += 2) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= s) continue;
+        for (let dx = -1; dx <= 1; dx += 2) {
+          const nx = x + dx;
+          if (nx < 0 || nx >= s) continue;
+          if (b[ny * s + nx] === opp) badDiag++;
+        }
+      }
+      return edge ? badDiag === 0 : badDiag <= 1;
+    }
+    /* Tromp-Taylor area diff: black - (white + komi) */
+    score(komi) {
+      const b = this.board, n = b.length;
+      let black = 0, white = 0;
+      for (let i = 0; i < n; i++) { if (b[i] === BLACK) black++; else if (b[i] === WHITE) white++; }
+      const seen = _seenFlags; seen.fill(0, 0, n);
+      const stack = _stack;
+      for (let i = 0; i < n; i++) {
+        if (b[i] !== EMPTY || seen[i]) continue;
+        let touchB = false, touchW = false, cnt = 0;
+        seen[i] = 1; stack.length = 0; stack.push(i);
+        while (stack.length) {
+          const c = stack.pop(); cnt++;
+          const nb = this.nb(c, _nb1);
+          for (let k = 0; k < nb.length; k++) {
+            const nn = nb[k], v = b[nn];
+            if (v === BLACK) touchB = true;
+            else if (v === WHITE) touchW = true;
+            else if (!seen[nn]) { seen[nn] = 1; stack.push(nn); }
+          }
+        }
+        if (touchB && !touchW) black += cnt;
+        else if (touchW && !touchB) white += cnt;
+      }
+      return black - white - komi;
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  Area ownership (Tromp-Taylor): per-point final owner estimate.     *
+   *  +1 black-owned point (stone or fully-surrounded empty region),     *
+   *  -1 white-owned, 0 dame/neutral. 围住的空点同样计入。               *
+   * ------------------------------------------------------------------ */
+  function areaOwnership(board) {
+    const b = board.board, n = b.length, s = board.size;
+    const out = new Int8Array(n);
+    const seen = _seenFlags; seen.fill(0, 0, n);
+    const stack = _stack;
+    for (let i = 0; i < n; i++) {
+      if (b[i] === BLACK) { out[i] = 1; continue; }
+      if (b[i] === WHITE) { out[i] = -1; continue; }
+      if (seen[i]) continue;
+      let touchB = false, touchW = false;
+      _region.length = 0;
+      seen[i] = 1; stack.length = 0; stack.push(i);
+      while (stack.length) {
+        const c = stack.pop(); _region.push(c);
+        const nb = board.nb(c, _nb1);
+        for (let k = 0; k < nb.length; k++) {
+          const nn = nb[k], v = b[nn];
+          if (v === BLACK) touchB = true;
+          else if (v === WHITE) touchW = true;
+          else if (!seen[nn]) { seen[nn] = 1; stack.push(nn); }
+        }
+      }
+      if (touchB && !touchW) { for (const r of _region) out[r] = 1; }
+      else if (touchW && !touchB) { for (const r of _region) out[r] = -1; }
+    }
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  Light playout                                                      *
+   * ------------------------------------------------------------------ */
+  function atariLiberties(board, color, out) {
+    // collect [lib, size, lib, size, ...] for groups of `color` with exactly 1 liberty
+    const b = board.board, n = b.length;
+    out.length = 0;
+    _grpSeen.fill(0, 0, n);
+    for (let i = 0; i < n; i++) {
+      if (b[i] !== color) continue;
+      const r = board.find(i);
+      if (_grpSeen[r]) continue;
+      _grpSeen[r] = 1;
+      if (board.libs[r] !== 1) continue;
+      board.curStamp++;
+      let lib = -1;
+      for (let s = board.head[r]; s >= 0 && lib < 0; s = board.next[s]) {
+        const nb = board.nb(s, _nb2);
+        for (let k = 0; k < nb.length; k++) {
+          const p = nb[k];
+          if (b[p] === EMPTY && board.stamp[p] !== board.curStamp) {
+            board.stamp[p] = board.curStamp; lib = p; break;
+          }
+        }
+      }
+      if (lib >= 0) { out.push(lib, board.stones[r]); }
+    }
+    return out;
+  }
+
+  /* One light playout; returns black-vs-white area diff (black positive). */
+  function playout(board, colorToMove, komi, maxMoves, rng, ownAcc, ownWeight) {
+    let color = colorToMove, passes = 0;
+    const n = board.board.length;
+    const atk = [];
+    for (let m = 0; m < maxMoves && passes < 2; m++) {
+      let played = false;
+      // capture biggest opponent atari group（atk 为 [lib,size,...] 扁平对）
+      atariLiberties(board, other(color), atk);
+      if (atk.length && rng() < 0.86) {
+        let bi = -1, bs = 0;
+        for (let k = 0; k < atk.length; k += 2) {
+          if (atk[k + 1] > bs && atk[k] !== board.ko) { bs = atk[k + 1]; bi = atk[k]; }
+        }
+        if (bi >= 0 && board.play(bi, color) >= 0) played = true;
+      }
+      // save own atari group
+      if (!played) {
+        atariLiberties(board, color, atk);
+        if (atk.length && rng() < 0.82) {
+          let bi = -1, bs = 0;
+          for (let k = 0; k < atk.length; k += 2) {
+            if (atk[k + 1] > bs && atk[k] !== board.ko) { bs = atk[k + 1]; bi = atk[k]; }
+          }
+          if (bi >= 0 && board.play(bi, color) >= 0) played = true;
+        }
+      }
+      // random non-eye move
+      if (!played) {
+        let tries = n, i = (rng() * n) | 0;
+        while (tries-- > 0) {
+          if (board.board[i] === EMPTY && i !== board.ko && !board.isTrueEye(i, color)) {
+            if (board.play(i, color) >= 0) { played = true; break; }
+          }
+          i++; if (i >= n) i = 0;
+        }
+      }
+      if (!played) { passes++; board.ko = -1; } else passes = 0; // pass 清劫禁点
+      color = other(color);
+    }
+    if (ownAcc) {
+      // 终局领地归属：棋子 + 围住的空点一并计入（dame 为 0）
+      const own = areaOwnership(board);
+      for (let i = 0; i < n; i++) ownAcc[i] += ownWeight * own[i];
+    }
+    return board.score(komi);
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  Heuristic candidate priors                                         *
+   * ------------------------------------------------------------------ */
+  const _nb3 = [], _nb4 = [];
+  const _lineWCache = new Map();
+  function lineWeights(s) {
+    let t = _lineWCache.get(s);
+    if (!t) {
+      t = [];
+      for (let e = 0; e < s; e++) {
+        t.push(e === 0 ? 0.02 : e === 1 ? 0.35 : e === 2 ? 0.95 : e === 3 ? 1.35 : e === 4 ? 1.2 : 0.95);
+      }
+      _lineWCache.set(s, t);
+    }
+    return t;
+  }
+  function genCandidates(board, color, phase, lastMove) {
+    const b = board.board, n = b.length, s = board.size;
+    const opp = other(color);
+    const oppAtari = atariLiberties(board, opp, []);
+    const myAtari = atariLiberties(board, color, []);
+    const capMap = new Map();
+    for (let k = 0; k < oppAtari.length; k += 2) capMap.set(oppAtari[k], (capMap.get(oppAtari[k]) || 0) + oppAtari[k + 1]);
+    const saveMap = new Map();
+    for (let k = 0; k < myAtari.length; k += 2) saveMap.set(myAtari[k], (saveMap.get(myAtari[k]) || 0) + myAtari[k + 1]);
+    // sparse stone map for proximity (opening only)
+    const stoneList = [];
+    if (phase < 1.2) {
+      for (let i = 0; i < n; i++) if (b[i] !== EMPTY) stoneList.push(i);
+    }
+    const edgeW = lineWeights(s);
+    const moves = [], priors = [];
+    for (let i = 0; i < n; i++) {
+      if (b[i] !== EMPTY || i === board.ko) continue;
+      if (board.isTrueEye(i, color)) continue;
+      // cheap suicide filter: must have an empty neighbor, capture an atari group,
+      // or join an own group that keeps liberties
+      const nbPre = board.nb(i, _nb4);
+      let emptyNbr = false, oppAtariNbr = false, ownSafeNbr = false;
+      for (let k = 0; k < nbPre.length; k++) {
+        const v = b[nbPre[k]];
+        if (v === EMPTY) { emptyNbr = true; continue; }
+        const rr = board.find(nbPre[k]);
+        if (v === color) { if (board.libs[rr] >= 2) ownSafeNbr = true; }
+        else if (board.libs[rr] === 1) oppAtariNbr = true;
+      }
+      if (!emptyNbr && !oppAtariNbr && !ownSafeNbr) continue; // suicide
+      let pr = 1.0;
+      const capVal = capMap.get(i) || 0;
+      if (capVal > 0) pr += 6 + 3 * capVal;
+      const saveVal = saveMap.get(i) || 0;
+      if (saveVal > 0) {
+        const trial = board.clone();
+        const r = trial.play(i, color);
+        if (r >= 0) {
+          const libs = trial.libs[trial.find(i)];
+          if (libs >= 2) pr += 4 + 2 * saveVal;
+          else pr *= 0.12;
+        } else pr = 0;
+      }if (pr <= 0) continue;
+      if (capVal === 0) {
+        const nb = board.nb(i, _nb3);
+        let emptyAdj = 0, oppAtariAdj = 0, ownAdj = 0;
+        for (let k = 0; k < nb.length; k++) {
+          const v = b[nb[k]];
+          if (v === EMPTY) emptyAdj++;
+          else if (v === color) ownAdj++;
+          else if (board.libs[board.find(nb[k])] === 1) oppAtariAdj++;
+        }
+        if (emptyAdj === 0 && oppAtariAdj === 0) pr *= ownAdj >= 3 ? 0.08 : 0.4;
+        pr += 2.5 * oppAtariAdj;
+        if (lastMove >= 0) {
+          const lx = lastMove % s, ly = (lastMove / s) | 0;
+          const x = i % s, y = (i / s) | 0;
+          const d = Math.max(Math.abs(x - lx), Math.abs(y - ly));
+          if (d <= 3) pr += (4 - d) * 0.9;
+        }
+        if (stoneList.length) {
+          const x = i % s, y = (i / s) | 0;
+          let minD = 99;
+          for (let k = 0; k < stoneList.length; k++) {
+            const d = Math.max(Math.abs(x - (stoneList[k] % s)), Math.abs(y - ((stoneList[k] / s) | 0)));
+            if (d < minD) minD = d;
+          }
+          if (minD <= 4) pr += (5 - minD) * 0.35;
+        }
+        const x = i % s, y = (i / s) | 0;
+        const e = Math.min(x, y, s - 1 - x, s - 1 - y);
+        pr *= edgeW[e];
+      }
+      if (pr <= 0.001) continue;
+      moves.push(i); priors.push(pr);
+    }
+    let sum = 0;
+    for (const p of priors) sum += p;
+    if (sum > 0) for (let k = 0; k < priors.length; k++) priors[k] /= sum;
+    else if (priors.length) priors.fill(1 / priors.length);
+    return { moves, priors };
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  MCTS (PUCT)                                                        *
+   * ------------------------------------------------------------------ */
+  class MctsNode {
+    constructor(move, color, prior, parent) {
+      this.move = move; this.color = color; this.prior = prior; this.parent = parent;
+      this.children = null;
+      this.visits = 0; this.wins = 0; // wins from mover-to-this-node perspective
+    }
+    q() { return this.visits ? this.wins / this.visits : 0.45; }
+  }
+  const MAX_CHILDREN = 72; // 渐进加宽：只保留先验最高的分支 + pass，降低选点/内存开销
+  function expandNode(board, node, colorToMove, phase, lastMove, bookBoost) {
+    const { moves, priors } = genCandidates(board, colorToMove, phase, lastMove);
+    /* 开局库命中：根节点只保留库候选（+ pass），让有限访问量集中在开局要点上；
+     * 库候选在 genCandidates 里必为合法着点，真眼/自杀点不会进库。 */
+    if (bookBoost && bookBoost.size) {
+      let sum = 0;
+      for (const w of bookBoost.values()) sum += w;
+      node.children = [];
+      for (let k = 0; k < moves.length; k++) {
+        const w = bookBoost.get(moves[k]);
+        if (w) node.children.push(new MctsNode(moves[k], colorToMove, w / sum, node));
+      }
+      if (node.children.length) {
+        node.children.push(new MctsNode(-1, colorToMove, 0.004, node)); // pass
+        return;
+      }
+    }
+    const children = [];
+    if (moves.length > MAX_CHILDREN) {
+      const order = moves.map((_, i) => i).sort((a, b) => priors[b] - priors[a]);
+      for (let j = 0; j < MAX_CHILDREN; j++) {
+        const k = order[j];
+        children.push(new MctsNode(moves[k], colorToMove, priors[k], node));
+      }
+    } else {
+      for (let k = 0; k < moves.length; k++) {
+        children.push(new MctsNode(moves[k], colorToMove, priors[k], node));
+      }
+    }
+    children.push(new MctsNode(-1, colorToMove, 0.004, node)); // pass
+    node.children = children;
+  }
+  function selectChild(node, cPuct) {
+    let best = null, bestScore = -Infinity;
+    const sqrtN = Math.sqrt(node.visits + 1);
+    for (const c of node.children) {
+      if (c.prior < 0) continue; // permanently excluded (illegal in this line)
+      const u = c.q() + cPuct * c.prior * sqrtN / (1 + c.visits);
+      if (u > bestScore) { bestScore = u; best = c; }
+    }
+    return best;
+  }
+  function pvLine(node, maxLen) {
+    const out = [];
+    let cur = node;
+    while (cur.children && cur.children.length && out.length < maxLen) {
+      let best = null;
+      for (const c of cur.children) if (!best || c.visits > best.visits) best = c;
+      if (!best || best.visits === 0) break;
+      out.push(best.move);
+      cur = best;
+    }
+    return out;
+  }
+  function vtx(size, m) {
+    return m < 0 ? { pass: true, x: -1, y: -1 } : { pass: false, x: m % size, y: (m / size) | 0 };
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  Opening book (19x19)                                               *
+   *  轻量布局库：只收录被广泛认可的角部开局与简单挂角，不冒充定式库。   *
+   *  每条线是 [color,x,y] 序列（1=黑 2=白，x 左→右，y 上→下）；加载时   *
+   *  对 8 种棋盘对称做规范化，一条线即覆盖旋转/镜像后的全部等价局面。   *
+   *  命中后的作用：把对应根候选的先验加权，让有限访问量优先落在开局要点。*
+   * ------------------------------------------------------------------ */
+  const BOOK_SIZE = 19;
+  const MAX_TREE_VISITS = 250000; // 跨手复用树的访问量上限，防止长对局内存膨胀
+  const _TR = [
+    (x, y, n) => [x, y],
+    (x, y, n) => [n - 1 - y, x],
+    (x, y, n) => [n - 1 - x, n - 1 - y],
+    (x, y, n) => [y, n - 1 - x],
+    (x, y, n) => [n - 1 - x, y],
+    (x, y, n) => [x, n - 1 - y],
+    (x, y, n) => [y, x],
+    (x, y, n) => [n - 1 - y, n - 1 - x]
+  ];
+  const _TR_INV = [0, 3, 2, 1, 4, 5, 6, 7]; // 每个对称变换的逆（对合/旋转成对）
+  function canonMoves(moves) {
+    const n = BOOK_SIZE;
+    let bestKey = null, bestK = 0;
+    for (let k = 0; k < 8; k++) {
+      const f = _TR[k];
+      let key = '';
+      for (const m of moves) {
+        if (m.pass) { key += m.color + 'p.'; continue; }
+        const t = f(m.x, m.y, n);
+        key += m.color + (t[1] * n + t[0]).toString(36) + '.';
+      }
+      if (bestKey === null || key < bestKey) { bestKey = key; bestK = k; }
+    }
+    return { key: bestKey, inv: _TR_INV[bestK] };
+  }
+  const BOOK_LINES = [
+    // 四角星（对角 / 同侧配对）
+    [[1, 15, 3], [2, 3, 15], [1, 3, 3], [2, 15, 15]],
+    [[1, 15, 3], [2, 3, 3], [1, 3, 15], [2, 15, 15]],
+    [[1, 15, 3], [2, 15, 15], [1, 3, 3], [2, 3, 15]],
+    [[1, 3, 3], [2, 15, 15], [1, 15, 3], [2, 3, 15]],
+    // 星位 + 挂角（R14 / R6 等小飞挂）
+    [[1, 15, 3], [2, 16, 5], [1, 3, 15], [2, 3, 3]],
+    [[1, 15, 3], [2, 16, 5], [1, 3, 3], [2, 15, 15]],
+    [[1, 3, 3], [2, 16, 5], [1, 15, 3], [2, 15, 15]],
+    // 3-4（小目）开局
+    [[1, 16, 3], [2, 3, 15], [1, 3, 3], [2, 15, 15]],
+    [[1, 2, 3], [2, 16, 5], [1, 15, 15], [2, 3, 15]],
+    // 3-3（三三）开局
+    [[1, 2, 2], [2, 15, 3], [1, 15, 15], [2, 3, 15]],
+    [[1, 16, 16], [2, 3, 3], [1, 3, 15], [2, 15, 3]],
+    // 五手延伸：角部占完后挂对方星位
+    [[1, 15, 3], [2, 3, 15], [1, 3, 3], [2, 15, 15], [1, 16, 13]],
+    [[1, 15, 3], [2, 3, 3], [1, 3, 15], [2, 15, 15], [1, 2, 13]]
+  ];
+  const _BOOK = new Map();
+  for (const line of BOOK_LINES) {
+    // p=0 收录空盘首手，之后每个前缀收录其下一手
+    for (let p = 0; p < line.length; p++) {
+      const prefix = [];
+      for (let q = 0; q < p; q++) prefix.push({ color: line[q][0], x: line[q][1], y: line[q][2] });
+      const c = canonMoves(prefix);
+      const k = _TR_INV[c.inv]; // current → canonical
+      const t = _TR[k](line[p][1], line[p][2], BOOK_SIZE);
+      const move = t[1] * BOOK_SIZE + t[0];
+      let arr = _BOOK.get(c.key);
+      if (!arr) { arr = []; _BOOK.set(c.key, arr); }
+      arr.push({ move, w: 1 });
+    }
+  }
+  /* 返回 Map(落点索引 → 权重)；不匹配返回 null。仅 19 路整盘开局调用。 */
+  function bookMoves(moves) {
+    moves = moves || [];
+    if (moves.length > 12) return null;
+    for (const m of moves) if (!m.color) return null;
+    const c = canonMoves(moves);
+    const arr = _BOOK.get(c.key);
+    if (!arr) return null;
+    const out = new Map();
+    for (const e of arr) {
+      const t = _TR[c.inv](e.move % BOOK_SIZE, (e.move / BOOK_SIZE) | 0, BOOK_SIZE);
+      const idx = t[1] * BOOK_SIZE + t[0];
+      out.set(idx, (out.get(idx) || 0) + e.w);
+    }
+    return out;
+  }
+
+  class GoAI {
+    constructor() {
+      this.stopFlag = false;
+      this.root = null;       // 上一手搜索树，用于跨手复用（rollout reuse）
+      this.rootKeys = null;   // 上一手局面手顺（前缀匹配）
+      this.rootSize = 0;
+      this.rootSetup = null;
+    }
+    stop() { this.stopFlag = true; }
+    budgetFor(strength, forAnalysis) {
+      const s = Math.max(1, Math.min(9, strength | 0));
+      const table = [
+        { visits: 40, timeMs: 250, noise: 0.55 },
+        { visits: 80, timeMs: 400, noise: 0.45 },
+        { visits: 160, timeMs: 600, noise: 0.35 },
+        { visits: 320, timeMs: 900, noise: 0.25 },
+        { visits: 640, timeMs: 1400, noise: 0.18 },
+        { visits: 1200, timeMs: 2000, noise: 0.12 },
+        { visits: 2200, timeMs: 3000, noise: 0.07 },
+        { visits: 4000, timeMs: 4500, noise: 0.03 },
+        { visits: 7000, timeMs: 7000, noise: 0 }
+      ];
+      const b = table[s - 1];
+      return forAnalysis ? { visits: Math.max(b.visits, 2400), timeMs: Math.max(b.timeMs, 3000), noise: 0 } : b;
+    }
+    /* posSpec: {size, komi, setup:{AB:[i],AW:[i]}, moves:[{color,x,y,pass}], toMove?}
+     * opts: {strength, maxVisits, timeMs, topN, analysis} */
+    analyze(posSpec, opts) {
+      this.stopFlag = false;
+      opts = opts || {};
+      const size = posSpec.size || 19;
+      const komi = posSpec.komi !== undefined ? posSpec.komi : 7.5;
+      const strength = opts.strength || 7;
+      const budget = this.budgetFor(strength, opts.analysis);
+      const maxVisits = opts.maxVisits || budget.visits;
+      const timeMs = opts.timeMs || budget.timeMs;
+      const noise = budget.noise;
+      const topN = opts.topN || 5;
+
+      const rootBoard = new FastBoard(size);
+      if (posSpec.setup) {
+        for (const i of (posSpec.setup.AB || [])) rootBoard.setupStone(i, BLACK);
+        for (const i of (posSpec.setup.AW || [])) rootBoard.setupStone(i, WHITE);
+        rootBoard.rebuild();
+      }
+      let last = -1;
+      const moves = posSpec.moves || [];
+      const moveKeys = [];
+      for (const m of moves) {
+        if (m.pass) { last = -1; rootBoard.ko = -1; moveKeys.push('p'); } // pass 清劫禁点（与规则引擎 goengine 语义一致）
+        else { const idx = m.y * size + m.x; rootBoard.play(idx, m.color); last = idx; moveKeys.push(m.color + ':' + idx); }
+      }
+      let rootColor;
+      if (posSpec.toMove) rootColor = posSpec.toMove;
+      else if (moves.length) rootColor = other(moves[moves.length - 1].color);
+      else if (posSpec.setup && posSpec.setup.AB && posSpec.setup.AB.length) rootColor = WHITE;
+      else rootColor = BLACK;
+
+      const phase = moves.length / (size * 2);
+      const setupKey = JSON.stringify(posSpec.setup || null);
+      const bookBoost = (size === BOOK_SIZE && !posSpec.setup) ? bookMoves(moves) : null;
+      /* 跨手复用：新局面是上一手局面的延伸时，直接把上一棵搜索树切到对应子节点，
+       * 沿用已有的访问/胜率统计（蒙特卡洛树复用，显著提升实际对局的开局/中盘强度）。
+       * 命中开局库时优先用库（走全新根并限制候选），不参与复用。 */
+      let root = null;
+      if (!bookBoost && this.root && this.rootSize === size && this.rootSetup === setupKey &&
+          this.rootKeys && this.rootKeys.length <= moveKeys.length &&
+          this.root.visits < MAX_TREE_VISITS) {
+        const old = this.rootKeys;
+        let prefixOk = true;
+        for (let i = 0; i < old.length; i++) if (old[i] !== moveKeys[i]) { prefixOk = false; break; }
+        if (prefixOk) {
+          let cur = this.root;
+          for (let i = old.length; i < moveKeys.length; i++) {
+            const cm = moves[i].pass ? -1 : moves[i].y * size + moves[i].x;
+            let child = cur.children && cur.children.find ? cur.children.find(c => c.move === cm) : null;
+            if (!child) {
+              child = new MctsNode(cm, moves[i].color, 0.004, cur);
+              if (!cur.children) cur.children = [];
+              cur.children.push(child);
+            }
+            cur = child;
+          }
+          if (old.length !== moveKeys.length) cur.color = other(cur.color); // 新根 color = 当前行棋方
+          cur.parent = null;
+          if (cur.color === rootColor) root = cur; // 手顺/行棋方一致才复用
+        }
+      }
+      if (!root) {
+        root = new MctsNode(-1, rootColor, 1, null);
+        expandNode(rootBoard, root, rootColor, phase, last, bookBoost);
+      }
+      const ownAcc = new Float32Array(size * size);
+      let ownPlayouts = 0, sumScore = 0, visits = 0;
+      const t0 = Date.now();
+      const cPuct = 1.1;
+      const maxMovesPlayout = size * size * 2 + 60;
+      const rng = Math.random;
+      const self = this;
+
+      while (visits < maxVisits) {
+        if (self.stopFlag) break;
+        if ((visits & 15) === 0 && Date.now() - t0 >= timeMs) break;
+        // --- descend ---
+        let node = root;
+        const work = rootBoard.clone();
+        let colorNow = rootColor, lastM = last, depth = 0;
+        while (node.children && node.children.length && node.visits > 0 && depth < 512) {
+          let child = null, tries = node.children.length;
+          while (tries-- > 0) {
+            child = noise > 0 ? noisyPick(node.children, rng, noise) : selectChild(node, cPuct);
+            if (!child) break;
+            if (child.move < 0 || work.play(child.move, child.color) >= 0) break;
+            excludeChild(child);
+            child = null;
+          }
+          if (!child) break;
+          if (child.move >= 0) { lastM = child.move; } else { lastM = -1; work.ko = -1; } // pass 清劫禁点
+          node = child; colorNow = other(colorNow); depth++;
+        }
+        // --- expand / pick leaf ---
+        if (node.visits > 0 && (!node.children || !node.children.length)) {
+          expandNode(work, node, colorNow, phase, lastM);
+        }
+        let leaf = node;
+        if (node.children && node.children.length) {
+          let tries = node.children.length;
+          while (tries-- > 0) {
+            leaf = noise > 0 ? noisyPick(node.children, rng, noise) : (selectChild(node, cPuct) || node.children[0]);
+            if (!leaf) { leaf = node; break; }
+            if (leaf === node || leaf.move < 0 || work.play(leaf.move, leaf.color) >= 0) break;
+            excludeChild(leaf);
+            leaf = null;
+          }
+          if (!leaf) leaf = node;
+        }
+        // --- playout ---
+        const diff = playout(work, other(leaf.color), komi, maxMovesPlayout, rng, ownAcc, 1);
+        ownPlayouts++; sumScore += diff;
+        const z = diff > 0 ? 1 : diff < 0 ? 0 : 0.5; // black win fraction
+        // --- backup ---
+        let cur = leaf;
+        while (cur) {
+          cur.visits++;
+          cur.wins += (cur.color === BLACK) ? z : (1 - z);
+          cur = cur.parent;
+        }
+        visits++;
+        if ((visits & 255) === 0 && isWorkerRuntime) {
+          const p = buildResult(root, visits, t0, ownAcc, ownPlayouts, sumScore, size, komi, topN);
+          p.done = false;
+          scope.postMessage(p);
+        }
+      }
+      const result = buildResult(root, visits, t0, ownAcc, ownPlayouts, sumScore, size, komi, topN);
+      result.done = true;
+      result.strength = strength;
+      result.toMove = rootColor;
+      // 保存本手搜索树，供下一手局面延伸时复用
+      this.root = root; this.rootKeys = moveKeys; this.rootSize = size; this.rootSetup = setupKey;
+      return result;
+    }
+  }
+  function excludeChild(c) {
+    c.prior = -1;   // illegal in this line — exclude permanently
+    c._wT = -1;     // noisyPick 权重缓存失效
+  }
+  function noisyPick(children, rng, noise) {
+    let sum = 0;
+    const invT = 1 - noise * 1.4;
+    for (const c of children) {
+      // 权重变换按子缓存：prior 未变时不再每次重算 pow
+      if (c._wT < 0 || c._wInvT !== invT) {
+        c._wInvT = invT;
+        c._wT = c.prior < 0 ? 0 : Math.pow(c.prior + 1e-9, invT);
+      }
+      sum += c._wT;
+    }
+    if (sum <= 0) return null;
+    let r = rng() * sum;
+    for (let k = 0; k < children.length; k++) { r -= children[k]._wT; if (r <= 0) return children[k]; }
+    return children[children.length - 1];
+  }
+  function buildResult(root, visits, t0, ownAcc, ownPlayouts, sumScore, size, komi, topN) {
+    const secs = Math.max(0.001, (Date.now() - t0) / 1000);
+    const cand = [];
+    if (root.children) {
+      const arr = root.children.slice().sort((a, b) => b.visits - a.visits);
+      for (const c of arr) {
+        if (cand.length >= topN) break;
+        if (c.visits === 0) continue;
+        const q = c.wins / c.visits;
+        cand.push({
+          ...vtx(size, c.move),
+          visits: c.visits,
+          winrate: c.color === BLACK ? q : 1 - q,
+          prior: c.prior,
+          pv: [vtx(size, c.move)].concat(pvLine(c, 12).map(m => vtx(size, m)))
+        });
+      }
+    }
+    const best = cand[0] || null;
+    const meanDiff = ownPlayouts ? sumScore / ownPlayouts : 0;
+    return {
+      type: 'result',
+      engine: 'got-mcts',
+      best: best ? { x: best.x, y: best.y, pass: !!best.pass } : null,
+      winrate: best ? best.winrate : 0.5,
+      scoreLead: meanDiff, // black-positive area estimate incl. komi
+      visits,
+      nodesPerSec: Math.round(visits / secs),
+      candidates: cand,
+      ownership: ownPlayouts ? Array.from(ownAcc, v => v / ownPlayouts) : [],
+      elapsedMs: Date.now() - t0
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  Wiring: worker protocol / Node export                              *
+   * ------------------------------------------------------------------ */
+  const ai = new GoAI();
+  const isWorker = typeof scope.postMessage === 'function' && typeof scope.importScripts === 'function';
+  if (isWorker) {
+    scope.onmessage = function (e) {
+      const msg = e.data || {};
+      if (msg.type === 'stop') { ai.stop(); return; }
+      if (msg.type === 'analyze') {
+        try {
+          const result = ai.analyze(msg.position || {}, msg.opts || {});
+          if (msg.marker) result.marker = msg.marker;
+          scope.postMessage(result);
+        } catch (err) {
+          scope.postMessage({ type: 'result', error: String(err && err.stack || err), done: true, marker: msg.marker });
+        }
+      }
+    };
+  }
+  const exportsObj = { GoAI, FastBoard, playout, genCandidates, MctsNode, areaOwnership, bookMoves, BOOK_LINES };
+  if (typeof module === 'object' && module.exports) module.exports = exportsObj;
+  scope.GoTAI = exportsObj;
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
+  <script src="js/version.js?v=v1.0.0"></script>
+  <script src="js/i18n-extra.js?v=v1.0.0"></script>
+  <script src="js/goengine.js?v=v1.0.0"></script>
+  <script src="js/browser-katago.js?v=v1.0.0"></script>
+  <script src="js/gtp.js?v=v1.0.0"></script>
+  <script src="js/board.js?v=v1.0.0"></script>
+  <script src="js/strength.js?v=v1.0.0"></script>
+  <script src="js/clock.js?v=v1.0.0"></script>
+  <script src="problems/problems.js"></script>
+  <script src="js/study-games.js?v=v1.0.0"></script>
+  <script src="records/famous-games.js?v=v1.0.0"></script>
+  <script src="js/study.js?v=v1.0.0"></script>
+  <script src="js/learning.js?v=v1.0.0"></script>
+  <script src="js/personalization.js?v=v1.0.0"></script>
+  <script src="js/tutor-pedagogy.js?v=v1.0.0"></script>
+  <script src="js/recovery.js?v=v1.0.0-byok"></script>
+  <script src="js/tutor-connection.js?v=v1.0.0-byok"></script>
+  <script src="js/tutor.js?v=v1.0.0-byok"></script>
+  <script src="js/growth.js?v=v1.0.0"></script>
+  <script src="js/curriculum.js?v=v1.0.0"></script>
+  <script src="js/training.js?v=v1.0.0"></script>
+  <script src="js/records.js?v=v1.0.0"></script>
+  <script src="js/home.js?v=v1.0.0"></script>
+  <script src="js/coach.js?v=v1.0.0"></script>
+  <script src="js/publishing.js?v=v1.0.0"></script>
+  <script src="js/studio.js?v=v1.0.0"></script>
+  <script src="js/ai-worker.js?v=v1.0.0"></script>
+  <script src="js/app.js?v=v1.0.0-byok"></script>
+  <!-- 首次访问说明：深色欢迎卡片，只在首次打开时展示一次。 -->
+  <style>
+    #staticNotice.sn-overlay{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:rgba(5,7,10,.82);backdrop-filter:blur(12px);animation:sn-fade-in .22s ease-out}
+    #staticNotice[hidden]{display:none}
+    #staticNotice .sn-card{position:relative;display:grid;grid-template-rows:auto 1fr auto;gap:0;width:min(680px,calc(100vw - 40px));min-height:410px;max-height:min(86dvh,620px);aspect-ratio:1.58;overflow:auto;background:radial-gradient(ellipse at 88% 4%,rgba(118,146,193,.11),transparent 38%),linear-gradient(145deg,#191d23,#111419 72%);color:#eef0f3;border:1px solid #363c46;border-radius:12px;padding:30px 34px 26px;box-shadow:0 36px 100px rgba(0,0,0,.62);font-family:Inter,system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.65;animation:sn-rise-in .32s cubic-bezier(.16,1,.3,1)}
+    #staticNotice .sn-head{display:flex;align-items:center;gap:15px;padding-bottom:22px;border-bottom:1px solid #303640}
+    #staticNotice .sn-mark{display:grid;place-items:center;width:54px;height:54px;flex:none;border:1px solid #444b57;border-radius:9px;background:#20252d;color:#d2b77a;font:700 15px ui-monospace,Consolas,monospace;letter-spacing:.08em}
+    #staticNotice .sn-heading{min-width:0;flex:1}.sn-badge{display:block;color:#aeb8ca;font:650 9px/1.4 ui-monospace,Consolas,monospace;letter-spacing:.16em}
+    #staticNotice h2{margin:5px 0 0;font-size:23px;line-height:1.28;letter-spacing:-.035em}
+    #staticNotice .sn-close{display:grid;place-items:center;width:38px;height:38px;flex:none;border:1px solid #3b414a;border-radius:6px;background:#1d2229;color:#b9c0ca;font-size:22px;cursor:pointer}
+    #staticNotice .sn-close:hover{border-color:#687385;color:#fff}
+    #staticNotice .sn-body{display:grid;grid-template-columns:minmax(0,1fr) 190px;align-items:center;gap:28px;padding:22px 0}
+    #staticNotice .sn-copy p{margin:0 0 12px;color:#bdc3cc;font-size:13px;line-height:1.8}
+    #staticNotice .sn-copy .sn-en{margin:0;color:#8792a1;font-size:11px;line-height:1.75}
+    #staticNotice .sn-side{padding:15px 16px;border:1px solid #343a44;border-radius:7px;background:rgba(30,35,43,.78)}
+    #staticNotice .sn-side-label{display:block;margin-bottom:10px;color:#8e99aa;font:650 9px ui-monospace,Consolas,monospace;letter-spacing:.12em}
+    #staticNotice .sn-feature{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;margin-top:10px;color:#c7ccd4;font-size:11px;line-height:1.55}
+    #staticNotice .sn-feature b{color:#d4b779;font:650 10px ui-monospace,Consolas,monospace}
+    #staticNotice .sn-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:18px;border-top:1px solid #303640}
+    #staticNotice .sn-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+    #staticNotice .sn-btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 12px;border:1px solid #3a414c;border-radius:5px;background:#1d2229;color:#d4d9e0;font-size:11px;font-weight:600;text-decoration:none;cursor:pointer;transition:background .16s,border-color .16s,color .16s}
+    #staticNotice .sn-btn:hover{border-color:#717d91;background:#252b34;color:#fff}
+    #staticNotice .sn-btn-primary{min-width:130px;border-color:#c6a96e;background:#c6a96e;color:#17191c}
+    #staticNotice .sn-btn-primary:hover{border-color:#dec486;background:#dec486;color:#111316}
+    #staticNotice .sn-link{color:#9ba6b6;font-size:11px;text-decoration:none}
+    #staticNotice .sn-link:hover{color:#e1c889;text-decoration:underline}
+    @keyframes sn-fade-in{from{opacity:0}to{opacity:1}}@keyframes sn-rise-in{from{opacity:0;transform:translateY(9px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @media(max-width:620px){#staticNotice.sn-overlay{padding:14px}#staticNotice .sn-card{width:100%;min-height:0;max-height:90dvh;aspect-ratio:auto;padding:22px 20px 18px}#staticNotice .sn-head{padding-bottom:17px}#staticNotice h2{font-size:20px}#staticNotice .sn-body{grid-template-columns:1fr;gap:16px;padding:18px 0}#staticNotice .sn-side{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}#staticNotice .sn-side-label{grid-column:1/-1;margin:0}#staticNotice .sn-feature{margin:0}#staticNotice .sn-foot{align-items:flex-start;flex-direction:column-reverse}#staticNotice .sn-btn-primary{width:100%}}
+    @media(prefers-reduced-motion:reduce){#staticNotice.sn-overlay,#staticNotice .sn-card{animation:none}}
+  </style>
+  <div id="staticNotice" class="sn-overlay" hidden>
+    <section class="sn-card" role="dialog" aria-modal="true" aria-labelledby="snTitle" aria-describedby="snDescription">
+      <header class="sn-head"><div class="sn-mark" aria-hidden="true">GoT</div><div class="sn-heading"><span class="sn-badge">GO · THINK · REVIEW &nbsp; / &nbsp; v1.0.0</span><h2 id="snTitle">欢迎来到 GoT</h2></div><button class="sn-close" type="button" id="snClose" aria-label="关闭">×</button></header>
+      <div class="sn-body"><div class="sn-copy" id="snDescription"><p>在这里开始对弈、浏览棋谱，或按自己的节奏学习围棋。无需安装即可先体验内置棋力；浏览器 KataGo 会在首次使用时自动加载。AI 老师需网站老师接口可用，并使用你自己的模型 API 密钥；密钥仅在当前浏览器保存。</p><p class="sn-en">Play a game, explore records, or learn at your own pace. Built-in play is ready right away; browser KataGo loads automatically when first used. The AI teacher requires the site teacher gateway and your own model API key, saved only in this browser.</p></div><aside class="sn-side"><span class="sn-side-label">快速开始 · GET STARTED</span><div class="sn-feature"><b>01</b><span>从首页直接开始一盘棋</span></div><div class="sn-feature"><b>02</b><span>打开棋谱，逐手浏览名局</span></div><div class="sn-feature"><b>03</b><span>进入学习，继续练习与复盘</span></div></aside></div>
+      <footer class="sn-foot"><div class="sn-links"><a class="sn-link" href="show/index.html" target="_blank" rel="noopener">查看功能说明 ↗</a><a class="sn-link" href="https://github.com/PotatoMap/GoT" target="_blank" rel="noopener">GitHub ↗</a></div><button class="sn-btn sn-btn-primary" type="button" id="snDone">知道了，开始使用</button></footer>
+    </section>
+  </div>
+  <script>
+    (function () {
+      var overlay = document.getElementById('staticNotice');
+      var done = document.getElementById('snDone');
+      var close = document.getElementById('snClose');
+      if (!overlay || !done || !close) return;
+      var seenKey = 'got.staticPreview.seen';
+      var seen = false;
+      try { seen = localStorage.getItem(seenKey) === '1'; } catch (_) {}
+      function hide() {
+        overlay.hidden = true;
+        try { localStorage.setItem(seenKey, '1'); } catch (_) {}
+      }
+      done.addEventListener('click', hide);
+      close.addEventListener('click', hide);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) hide(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !overlay.hidden) hide(); });
+      if (!seen) { overlay.hidden = false; close.focus(); }
+    })();
+  </script>
+
+</body>
+</html>

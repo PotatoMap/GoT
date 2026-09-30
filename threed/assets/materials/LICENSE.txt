@@ -1,0 +1,16 @@
+3D board materials added for GoT 2.7.7
+
+The three bundled base-color images in this directory were newly generated for GoT, not copied from external material libraries:
+- walnut-veneer.jpg — walnut base color
+- white-oak-veneer.jpg — white oak base color
+- honed-slate.jpg — fine-grained slate base color
+
+At runtime, the renderer derives a restrained tangent-space normal map and a roughness map from the selected base-color image. Only the selected board image is decoded; it is capped to the device's active texture budget. The 2D Kaya material uses a separate generated file at assets/appearance-generated/kaya-photo.jpg.
+
+External material survey (researched as candidate sources, not bundled):
+- Poly Haven, Walnut Veneer, author Jenelle van Heerden, up to 16K, CC0: https://polyhaven.com/a/walnut_veneer
+- Poly Haven, White Oak Veneer, author Jenelle van Heerden, up to 8K, CC0: https://polyhaven.com/a/white_oak_veneer
+- Poly Haven, Rock 01, author Rob Tuytel, up to 8K, CC0: https://polyhaven.com/a/rock_01
+- Poly Haven asset license: https://polyhaven.com/license
+
+Poly Haven states that its assets are CC0 and may be used commercially, redistributed, and included in products without attribution; attribution is appreciated. Direct asset downloads were blocked in the current environment, so these candidate scans were not packaged. The bundled maps are the original generated GoT textures instead. No Poly Haven map or preview image is included.

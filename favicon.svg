@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="board" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e4c17b"/><stop offset="1" stop-color="#b98843"/></linearGradient>
+    <radialGradient id="black" cx=".3" cy=".25" r=".8"><stop stop-color="#44494a"/><stop offset="1" stop-color="#080a0c"/></radialGradient>
+    <radialGradient id="white" cx=".32" cy=".24" r=".8"><stop stop-color="#fffef8"/><stop offset="1" stop-color="#d6d9d5"/></radialGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="7" fill="url(#board)"/>
+  <path d="M16 12v40M24 12v40M32 12v40M40 12v40M48 12v40M12 16h40M12 24h40M12 32h40M12 40h40M12 48h40" stroke="#644b2c" stroke-opacity=".76" stroke-width=".9"/>
+  <circle cx="24" cy="24" r="7" fill="url(#black)"/>
+  <circle cx="40" cy="40" r="7" fill="url(#white)"/>
+  <circle cx="40" cy="24" r="5.4" fill="url(#black)"/>
+  <path d="M21 21q1.3-2 3.2-1" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.3" stroke-linecap="round"/>
+</svg>

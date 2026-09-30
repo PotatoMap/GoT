@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171c20">
+  <meta name="description" content="GoT 使用指南：开始对弈、学习规则、练习死活题、复盘棋局并使用 AI 老师。">
+  <title>GoT 2.7.3 · 使用指南</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon-transparent.svg">
+  <link rel="stylesheet" href="guide.css?v=2.7.3">
+  <script src="guide.js?v=2.7.3" defer></script>
+</head>
+<body class="reading-page"><a class="skip" href="#main">跳到正文</a><header class="topbar"><a class="brand" href="../index.html"><img src="../brand.svg" alt="" width="32" height="32"><strong>GoT</strong></a><nav class="doc-nav" aria-label="说明页面"><a href="index.html">快速开始</a><a href="manual.html" aria-current="page">完整指南</a></nav></header><div class="page"><main id="main"><section class="manual-intro" id="start"><h1>完整指南</h1><p>按主题查阅，需要时再打开；从快速开始页可以直接进入 GoT。</p><p class="small-note">本指南目前提供简体中文；其他语言版本尚未完成。</p></section><aside class="contents"><details id="contentsMenu"><summary>选择一个主题</summary><nav aria-label="指南目录">        <a href="#play">下第一盘棋</a>        <a href="#board">认识棋盘与操作</a>        <a href="#analysis">看懂分析</a>        <a href="#review">复盘与棋谱</a>        <a href="#learn">课程与死活题</a>        <a href="#teacher">让 AI 老师带着学</a>        <a href="#engines">选择合适的棋力</a>        <a href="#save">保存与个性化</a>        <a href="#help">遇到问题怎么办</a></nav></details></aside>    <section class="chapter" id="play" aria-labelledby="playTitle">
+      <header><span class="chapter-number">01</span><div><h2 id="playTitle">下第一盘棋</h2><p>先选一个小棋盘，感受落子和轮流行棋。</p></div></header>
+      <ol class="walkthrough">
+        <li><h3>打开“对弈”，选择“新对局”</h3><p>初学者可以先选 <b>9×9</b>，一盘更短，也更容易看到棋子的联系。熟悉以后再换 13 路或 19 路。</p></li>
+        <li><h3>选对手、执子和用时</h3><p>想和电脑下，选择内置棋力或已连接的引擎；想自己摆棋研究，选择双人。第一次可用中国规则、默认贴目和较低棋力，其余先保留默认值。</p></li>
+        <li><h3>点击交叉点落子</h3><p>棋子下在横线与竖线的交叉处。轮到电脑时，等它应手后再继续。若开启了“落子确认”，还需要按所选方式双击或点击确认。</p></li>
+        <li><h3>结束时点目，想回看就复盘</h3><p>没有想下的地方，可以在棋盘下方“更多”里选择“停着”。双方连续停着会进入点目。重要棋局请导出棋谱保存。</p></li>
+      </ol>
+      <details><summary>贴目、让子和棋力，分别是什么？</summary><div class="detail-body"><dl><dt>贴目</dt><dd>黑棋先下有先手优势，规则会给白棋一定补偿。初次使用保留默认值即可。</dd><dt>让子</dt><dd>双方水平差距较大时，让较弱的一方先放一些棋子，再开始行棋。</dd><dt>棋力与用时</dt><dd>棋力控制对手的挑战程度；用时影响计算时间。标注的等级是参考，实际表现会随引擎、棋盘大小和设备变化。</dd></dl></div></details>
+      <div class="takeaway"><b>不小心点错？</b>可以悔棋。手机上容易误触的话，去“棋盘工具”开启落子确认。</div>
+    </section>
+
+    <section class="chapter" id="board" aria-labelledby="boardTitle">
+      <header><span class="chapter-number">02</span><div><h2 id="boardTitle">先认识一颗棋</h2><p>看懂“气”和“提子”，很多局部变化就有了起点。</p></div></header>
+      <div class="board-lesson">
+        <figure><svg id="lessonBoard" viewBox="0 0 360 360" role="img" aria-label="9 路棋盘示意：白棋 E5 被三颗黑棋包围，只剩 E6 一口气。"><rect x="0" y="0" width="360" height="360" rx="4" fill="#c4a272"/><g id="lessonGrid"></g><g id="lessonStones"></g><g id="lessonMarks"></g></svg><figcaption>操作示意 · 不影响你的棋局</figcaption><noscript><p>白棋在 E5，黑棋在 D5、F5、E4。白棋只剩 E6 一口气；黑棋下在 E6，就能提掉 E5 的白棋。</p></noscript></figure>
+        <div class="lesson-copy"><span class="lesson-stage" id="lessonStage">观察局面</span><h3 id="lessonTitle">白棋只剩一口气。</h3><p id="lessonText" aria-live="polite">气是上下左右相邻的空交叉点，斜角不算。白棋 E5 的三个方向已被黑棋围住，标记 A 所在的 E6，就是最后一口气。</p><div class="lesson-buttons"><button class="button primary" id="demoNext" type="button" disabled>看黑棋怎么提子</button><button class="button" id="demoReset" type="button" disabled>重新看</button></div><p class="small-note">老师讲解中的 A、B 标记也这样对应棋盘要点。它们是教学标注，不是已经下出的棋子。</p></div>
+      </div>
+      <h3>常用操作，记住这些就够了</h3>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="棋盘操作对照表"><table><thead><tr><th scope="col">想做什么</th><th scope="col">用哪个入口</th><th scope="col">会发生什么</th></tr></thead><tbody><tr><th scope="row">回看前后几手</th><td>棋盘下方的前后箭头</td><td>移动到已有棋谱的位置，不会删除棋谱。</td></tr><tr><th scope="row">撤回刚才一手</th><td>悔棋</td><td>回到此前局面；恢复入口在棋盘工具中。</td></tr><tr><th scope="row">看坐标、手数，或翻转棋盘</th><td>更多 → 棋盘工具</td><td>只改变显示方式。坐标如 D4：字母是列，数字从底边向上数，跳过字母 I。</td></tr><tr><th scope="row">棋盘看得更清楚</th><td>全屏、放大，或收起侧面板</td><td>为棋盘腾出空间。手机上可按需打开分析面板。</td></tr><tr><th scope="row">继续当前回看的局面</th><td>从此处续弈</td><td>浏览棋谱时自动落子可能暂停；决定续下时再恢复。</td></tr></tbody></table></div>
+      <p class="small-note">“形势”和“点目”的结果都显示在棋盘下方原有操作栏，不会另占一行。形势显示双方的局面估算；点目可以标记死子，并用确认或取消结束点目。</p>
+      <details><summary>电脑和手机的入口有什么区别？</summary><div class="detail-body"><p>电脑上使用左侧工作区导航和右侧分析面板。手机上使用底部主要入口，更多导航收在左上角；老师、分析等信息按需打开，用完可以收起，把空间留给棋盘。</p><p>坐标在手机上默认关闭、电脑上默认开启，都可以在棋盘工具里调整。对局画面不需要一直展示全部面板。</p></div></details>
+      <div class="takeaway"><b>调整棋盘外观：</b>在“设置 → 棋盘与显示”选择 2D 或 3D。3D 棋盘可调整材质、色调、棋子形状、光线、俯视角度和棋盘格范围；画布右上角也能快速调整角度和常用外观。</div>
+    </section>
+
+    <section class="chapter" id="analysis" aria-labelledby="analysisTitle">
+      <header><span class="chapter-number">03</span><div><h2 id="analysisTitle">分析：看看现在该怎么下</h2><p>打开“AI 分析”，让棋力引擎为当前局面提供参考。</p></div></header>
+      <div class="reading-example"><span>举个例子</span><p>“黑方约领先 <strong>3 目</strong>”</p><p class="example-caption">意思是：按目前的计算，黑方稍好。它不是最终结果，也不代表接下来怎么下都能赢。</p></div>
+      <dl class="explainer"><dt>候选着</dt><dd>引擎认为值得考虑的落点。点选候选或查看后续变化，可以理解它希望怎样继续；第一候选也需要结合搜索深度看待。</dd><dt>胜率</dt><dd>引擎对胜负机会的估计。它不是你的实际获胜概率，也不是黑白围住面积的比例。尤其在优势局面里，小的变化可能让胜率跳得很明显。</dd><dt>目差</dt><dd>更直观地估计谁领先、领先多少。黑优或白优表示领先的一方；数值仍会随计算和后续行棋变化。</dd><dt>损目</dt><dd>这一手相对参考走法可能损失了多少。比如原本约领先 5 目，走完只领先 2 目，粗略看就是亏了约 3 目。它是估计，不是裁判判分。</dd><dt>形势</dt><dd>用颜色帮助观察哪些区域更可能归黑棋或白棋。边界仍可能变化，不要直接当成最终点目。</dd></dl>
+      <details><summary>加深分析、指定着点、等量比较，什么时候用？</summary><div class="detail-body"><p><b>加深分析：</b>对某个转折拿不准，让引擎多想一会儿。</p><p><b>指定着点：</b>你想知道“我下这里行不行”，就分析这个点，而不只是看引擎主动推荐的点。</p><p><b>等量比较：</b>给几个候选更接近的计算机会，减少一个点算得多、另一个算得少带来的偏差。</p><p>先看棋理，再用这些工具核对。短时间搜索的细小差别，不必每一手都纠结。</p></div></details>
+      <div class="takeaway"><b>最有用的读法：</b>先问“我想解决什么问题”，再对比引擎的方向。不要只追着第一候选下。</div>
+    </section>
+
+    <section class="chapter" id="review" aria-labelledby="reviewTitle">
+      <header><span class="chapter-number">04</span><div><h2 id="reviewTitle">复盘：找到值得重学的一手</h2><p>分析看一个局面，复盘把整盘棋连起来看。</p></div></header>
+      <ol class="walkthrough"><li><h3>从“棋谱”选一盘，或导入自己的 SGF</h3><p>棋谱库用来找棋，打开后在复盘工作区逐手浏览。SGF 是围棋常见的棋谱文件，通常包含落子顺序、对局信息和分支。</p></li><li><h3>先快速复盘，再挑关键处深入</h3><p>运行 AI 复盘，选择合适的深度。先用快速档找出转折，有疑问的一手再加深；不需要每次都从最深档开始。</p></li><li><h3>把实际走法和参考走法摆在一起看</h3><p>通过“上一失误”“下一失误”跳转，查看候选和后续变化。重点问：是漏算了变化，还是方向和轻重缓急出了问题？</p></li><li><h3>只带走一个下次能执行的提醒</h3><p>比如“打入之前先看两边能否连接”。老师服务已配置时，可点“老师讲解本手”继续追问。</p></li></ol>
+      <details><summary>棋谱树、主线、分支是什么？</summary><div class="detail-body"><p><b>主线</b>固定沿左侧纵向排列。<b>分支</b>显示在产生变化的那一手下面，便于看清它从哪里开始。</p><p>点击分支卡片即可进入；进入后该变化会成为纵向主干，顶部路径可逐级返回。浏览和切换变化不会改写原有主线。需要保存研究成果时，导出 SGF。</p></div></details>
+    </section>
+
+    <section class="chapter" id="learn" aria-labelledby="learnTitle">
+      <header><span class="chapter-number">05</span><div><h2 id="learnTitle">学习：一次练一个问题</h2><p>不会规则先学规则；知道规则后，练习观察、计算和判断。</p></div></header>
+      <div class="lesson-routes"><article><h3>刚开始学</h3><p>进入“学习 → 新手教程”。左侧按任务推进，右侧结合棋盘看例子。先掌握气、提子、连接等基础。</p></article><article><h3>想练局部计算</h3><p>打开“死活题”，先看清黑先还是白先，再落子。普通题目按进度练习变化；老师课堂会根据课程流程自动应手并给提示。</p></article><article><h3>已经会下一盘</h3><p>进入针对训练或进阶与测评，选择自己常犯错的主题。把练习和最近复盘里发现的问题连起来。</p></article></div>
+      <details><summary>题目说我错了，是不是这个点一定不能下？</summary><div class="detail-body"><p>基础题目会按题库预设的解法判断。没匹配到解法，首先说明它不是这道题当前要求的走法，不等于系统已经证明所有其他变化都不成立。可以先按提示重读；想研究别解，再用分析工具核对。</p></div></details>
+    </section>
+
+    <section class="chapter" id="teacher" aria-labelledby="teacherTitle">
+      <header><span class="chapter-number">06</span><div><h2 id="teacherTitle">AI 老师：看着棋盘一起想</h2><p>老师可以演示、标注棋盘，并根据你的落子继续讲解；你也可以随时提出自己的问题。对话会连续显示在老师面板中，等待时可查看正在读取分数或组织回复。桌面端会收起侧栏，结束后恢复原布局。</p></div></header>
+      <div class="teacher-dialogue"><span>你可以这样问</span><blockquote>“这手为什么不好？”<br>“这里能脱先吗？”<br>“先别告诉我答案，提醒我看哪里。”</blockquote><p>问题会结合当前棋盘来回答，不必重新描述整盘棋。</p></div>
+      <h3 id="teacher-setup">先准备好这两样</h3>
+      <ol class="walkthrough"><li><h3>老师的语言服务</h3><p>打开 GoT，进入“设置 → 引擎 → 老师 AI API”。选择 <b>DeepSeek API</b>、<b>OpenCode Go</b> 或 <b>自定义</b>。自定义服务填写公开 HTTPS API 根地址、API Key 与模型 ID；服务需兼容支持工具调用的 OpenAI Chat Completions。然后验证连接并保存。没有配置时，开始学习按钮会保持灰色。</p><p class="small-note">密钥只保存在当前浏览器；使用自定义服务时，地址、密钥和课堂请求会经 GoT 老师接口转发到你指定的服务。请确认你信任该服务商。</p></li><li><h3>能计算棋局的 KataGo</h3><p>19 路指导棋和评分讲解需要 KataGo 就绪。它负责算棋，语言模型负责把结果讲清楚。能读取模型列表，只说明模型列表服务可访问，不等于讲解和围棋计算都已准备好。</p></li></ol>
+      <div class="edition-note"><strong>在线版能直接用老师吗？</strong><p>可以，但网站需要同时部署老师接口。Cloudflare 发布包已包含该接口；仅上传静态文件到不支持接口的主机仍无法使用老师。也可通过本机启动器使用。设置页会分别提示接口、密钥与供应商的连接状态。</p></div>
+      <h3>一次指导棋，按这个顺序进行</h3>
+      <ol class="teaching-flow"><li><b>你执黑落子</b><span>先表达自己的想法。</span></li><li><b>等待评估与白棋应手</b><span>比较黑棋这手前后的局面，再计算白棋应手后的黑棋方向。</span></li><li><b>老师解释重点</b><span>结合评估讲棋理，用 A、B 等角标指出棋盘上的位置。</span></li><li><b>继续下，或追问</b><span>不懂就问，也可以先看提示、自己再想一步。</span></li></ol>
+      <details><summary>老师标注、引擎候选、已有棋子，怎么区分？</summary><div class="detail-body"><p><b>老师标注：</b>带字母的小角标，讲解中会对应“标记 A”。它指出讨论位置，不表示那里已经落子；可点“清除标注”。</p><p><b>引擎候选：</b>分析时显示的计算参考点，侧面板可看对应评价。</p><p><b>棋子：</b>棋盘上的黑白子，组成真实局面。落子或切换局面后，旧老师标注会被清理，避免看错。</p></div></details>
+      <details><summary>老师多久才会回答？可以打断吗？</summary><div class="detail-body"><p>等待分成“算棋”和“组织讲解”两部分，会受设备、搜索和供应商响应影响。看当前状态即可，不用反复点开始。</p><p>“停止讲解”停止文字请求，不代表停止全部引擎计算。若请求失败，按界面提示重试。评分尚未准备好时，老师不会凭空给这手打分。</p></div></details>
+      <details><summary>课堂里如何悔棋与回看？</summary><div class="detail-body"><p>用“撤回我的上一手”退回作答前。逐手浏览棋谱时，课堂会暂停并取消旧局面的讲解；按“返回课堂继续”回到暂停前的课堂位置。浏览记录不会让老师偷偷续下。</p></div></details>
+      <details><summary>课堂记录和密钥在哪里？</summary><div class="detail-body"><p>保存范围、老师请求会发送的内容和删除方式见独立的<a href="../privacy.html">隐私政策</a>。</p></div></details>
+      <div class="takeaway"><b>把老师当作学习伙伴。</b>短时间计算和语言解释都可能有偏差。关键变化亲手摆一遍，必要时加深分析，比只接受一句结论更有帮助。</div>
+    </section>
+
+    <section class="chapter" id="engines" aria-labelledby="enginesTitle">
+      <header><span class="chapter-number">07</span><div><h2 id="enginesTitle">“引擎”和“模型”，不用混着选</h2><p>一个负责下棋，一个负责讲棋。</p></div></header>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="棋力和老师服务对照"><table><thead><tr><th scope="col">选项</th><th scope="col">做什么</th><th scope="col">适合什么时候</th></tr></thead><tbody><tr><th scope="row">内置 MCTS</th><td>基础电脑对手</td><td>先体验落子和流程，作为轻量后备棋力。</td></tr><tr><th scope="row">浏览器 KataGo b6</th><td>在浏览器里计算棋局</td><td>日常对弈、分析和可用时的指导棋计算；首次加载可能需要等待。</td></tr><tr><th scope="row">本机 KataGo</th><td>通过本机服务计算</td><td>已准备好本机引擎，希望使用更深入的分析。</td></tr><tr><th scope="row">DeepSeek / OpenCode Go / 自定义兼容 API</th><td>老师的语言讲解</td><td>需要 AI 老师时配置。选择语言模型不会自动替代 KataGo。</td></tr></tbody></table></div>
+      <p class="small-note">普通对弈在所选引擎不可用时可能回退到内置棋力；AI 指导棋需要 KataGo，不会把没有评分的结果冒充成 KataGo 的判断。</p>
+    </section>
+
+    <section class="chapter" id="save" aria-labelledby="saveTitle">
+      <header><span class="chapter-number">08</span><div><h2 id="saveTitle">把想保留的东西存好</h2><p>浏览器里的记录很方便，导出的文件才便于备份和换设备。</p></div></header>
+      <dl class="explainer"><dt>棋谱</dt><dd>使用 SGF 导入、导出保存对局与研究分支。普通棋局会自动保存到当前浏览器，重新打开后恢复为暂停状态，由你决定是否继续。恢复不自动启动计时或老师课堂。重要棋局仍请导出备份。</dd><dt>学习资料</dt><dd>学习区提供导入、导出入口。换浏览器、换设备或清理站点数据前，先导出需要保留的内容；课堂记录和本地资料的保存、删除范围见 <a href="../privacy.html">隐私政策</a>。</dd><dt>外观与面板</dt><dd>在设置里调整主题、棋盘、棋子和坐标。个性化设置可分别控制对弈与复盘的面板显示，也可在桌面端调整导航栏、棋盘区和右侧工作区宽度；AI 老师课堂使用独立布局。导航栏缩窄后会隐藏文字，保留图标；棋盘与工作区保持最小宽度。自然落点只改变棋子的显示位置，不影响规则或坐标判定。</dd><dt>棋盘图片</dt><dd>在对弈页打开“更多 → 导出棋盘 PNG”，可保存当前 2D 或 3D 棋盘的高清画面；按钮、分析提示和老师标记不会进入图片。</dd><dt>语言与关于</dt><dd>这里可切换界面语言、查看关于 GoT、上手说明和更新日志。“清空缓存并重载”需要确认，主要用于更新异常。</dd></dl>
+      <details><summary>电脑上有哪些快捷键？</summary><div class="detail-body shortcut-list"><p><kbd>←</kbd> <kbd>→</kbd> 浏览前后手　<kbd>↑</kbd> <kbd>↓</kbd> 切换分支</p><p><kbd>U</kbd> 悔棋　<kbd>R</kbd> 恢复悔棋　<kbd>M</kbd> 音效</p><p><kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>1</kbd>～<kbd>4</kbd> 切换主要工作区</p><p>输入文字或打开对话框时，部分棋盘快捷键不会触发。</p></div></details>
+    </section>
+
+    <section class="chapter" id="help" aria-labelledby="helpTitle">
+      <header><span class="chapter-number">09</span><div><h2 id="helpTitle">卡住时，先看这里</h2><p>先找到卡在哪一步，再做对应操作。</p></div></header>
+      <details><summary>点了棋盘，却没有落子。</summary><div class="detail-body"><p>先看是否轮到你、是否还在等待引擎，或是否开启了落子确认。已有棋子的位置不能再下；禁着点也不会生效。回看棋谱时若处于暂停浏览状态，可按“从此处续弈”。</p></div></details>
+      <details><summary>AI 老师的开始按钮是灰色。</summary><div class="detail-body"><p>查看设置页的连接提示，再到“设置 → 引擎 → 老师 AI API”选择供应商、填写 Key 并保存。若提示老师接口不可用，网站需要部署老师接口；本机版则需启动本机服务。</p></div></details>
+      <details><summary>老师开场有话，落子后却一直等待。</summary><div class="detail-body"><p>落子后的讲解还要等待 KataGo 评分。先看引擎是否就绪；若出现评分或应手失败，先重试对应步骤。语言模型能开场，不代表围棋引擎已经连上。</p></div></details>
+      <details><summary>出现“无法连接”“没有返回讲解”或超时。</summary><div class="detail-body"><p>查看设置中的接入状态，确认网站老师接口或本机服务可用，供应商和 Key 相匹配，选择的模型仍可用。再按“重试讲解”。如果刚更新过服务代码，重启本机 GoT 服务后刷新页面。可以记录错误文字反馈，但不要附上 Key。</p></div></details>
+      <details><summary>老师说了标记，我却看不到。</summary><div class="detail-body"><p>先看讲解是不是针对“先前局面”。局面已经改变时，旧标记不会画到新棋盘上。保持在想讨论的局面，重新请求讲解；支持识别的字母坐标会对应到老师标注。</p></div></details>
+      <details><summary>分析数字一直变，是不是坏了？</summary><div class="detail-body"><p>计算时间增加、候选变化或引擎切换都可能改变判断。先确认在比较同一局面、同一引擎，再适当加深分析。目差接近时，优先理解棋理，少纠结小数点。</p></div></details>
+      <details><summary>手机上看不到全部按钮，或者面板太占地方。</summary><div class="detail-body"><p>更多导航在左上角，棋盘下方也有“更多”。老师课堂默认收起棋局详情，需要时再展开。阅读完讲解后收起面板，就能回到完整棋盘。</p></div></details>
+      <details><summary>更新后还是旧页面。</summary><div class="detail-body"><p>先刷新。仍不一致时，在“设置 → 语言与关于”使用“清空缓存并重载”，按确认提示操作。本机版本同时需要重启服务。清理浏览器站点数据前，请另外备份重要资料。</p></div></details>
+    </section>
+<footer><a href="index.html">返回快速开始</a> · <a href="../index.html">打开 GoT</a></footer></main></div></body></html>
